@@ -40,3 +40,25 @@ export type Personalization = {
   briefing: string; // mechanisms, confidence, citations — for lawmakers / technical readers
   local: LocalImpact;
 };
+
+// ── Satellite evidence (Receipts mode) ──────────────────────────────────────
+// A before/after image pair for an analogue region, showing what the situation
+// was (past), how it changed (present), grounding the future horizons. The
+// `interpretation` is produced by local Gemma vision during precompute; it's
+// null when only the deterministic image URLs are available (no VLM run yet).
+export type SatelliteEvidence = {
+  policyId: string;
+  region: string;
+  dimension: string;
+  layerLabel: string;
+  dataset: string;
+  before: { date: string; url: string };
+  after: { date: string; url: string };
+  interpretation: {
+    observable: string;
+    summary: string;
+    direction: "improved" | "degraded" | "mixed" | "no_change";
+    confidence: "high" | "medium" | "low";
+  } | null;
+  model: string | null; // which VLM produced the interpretation
+};

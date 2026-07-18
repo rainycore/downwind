@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "seed": "node --env-file=.env.local --import tsx scripts/seed.ts"
+    "seed": "node --env-file=.env.local --import tsx scripts/seed.ts",
+    "evidence": "node --env-file=.env.local --import tsx scripts/evidence.ts"
   },
   "dependencies": {
     "@auth0/nextjs-auth0": "^4.25.0",

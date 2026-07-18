@@ -9,6 +9,7 @@ import {
   type Horizon,
   type Personalization,
   type UserProfile,
+  type SatelliteEvidence,
 } from "./schemas";
 import { profileHash } from "./profile";
 import { receiptFrom, cachedReceipt, type Usage, type CarbonReceipt } from "./greenai";
@@ -20,6 +21,7 @@ export type Analogue = {
   enactedYear: number;
   score: number;
   observedDelta: string; // human summary of the satellite-observed change
+  evidence?: SatelliteEvidence; // before/after image pair + Gemma read (Receipts mode)
 };
 
 // Profile-independent core of an analysis. Cached by input-policy hash so the
@@ -92,7 +94,22 @@ async function findAnalogues(extraction: PolicyExtraction, usages: Usage[]): Pro
     ])
     .toArray();
 
-  return docs as Analogue[];
+  const analogues = docs as Analogue[];
+
+  // Join the precomputed satellite evidence (image pair + Gemma interpretation)
+  // cached in `observations` by scripts/evidence.ts. Best-effort: no evidence
+  // just means the Receipts panel is omitted for that analogue.
+  const ids = analogues.map((a) => a.policyId);
+  if (ids.length) {
+    const evidence = await db
+      .collection<SatelliteEvidence>(COLLECTIONS.observations)
+      .find({ policyId: { $in: ids } }, { projection: { _id: 0 } })
+      .toArray();
+    const byId = new Map(evidence.map((e) => [e.policyId, e]));
+    for (const a of analogues) a.evidence = byId.get(a.policyId);
+  }
+
+  return analogues;
 }
 
 // ── Step 3: synthesize grounded impact across three honest horizons ──

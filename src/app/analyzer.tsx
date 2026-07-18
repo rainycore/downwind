@@ -177,6 +177,46 @@ export default function Analyzer({ profile }: { profile: UserProfile }) {
                       </span>
                     </div>
                     <p className="mt-1 text-xs text-neutral-600 dark:text-neutral-400">{a.observedDelta}</p>
+
+                    {/* Receipts: the actual before/after satellite image pair */}
+                    {a.evidence && (
+                      <div className="mt-3 rounded-md bg-neutral-50 p-3 dark:bg-neutral-900/50">
+                        <div className="flex items-center justify-between text-[10px] uppercase tracking-wide text-neutral-500">
+                          <span>📡 {a.evidence.dimension}</span>
+                          <span>{a.evidence.dataset}</span>
+                        </div>
+                        <div className="mt-2 grid grid-cols-2 gap-2">
+                          {[a.evidence.before, a.evidence.after].map((img, i) => (
+                            <figure key={i}>
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              <img
+                                src={img.url}
+                                alt={`${i === 0 ? "Before" : "After"} — ${a.evidence!.layerLabel}`}
+                                loading="lazy"
+                                className="aspect-square w-full rounded border border-neutral-200 object-cover dark:border-neutral-700"
+                              />
+                              <figcaption className="mt-1 text-center text-[10px] text-neutral-500">
+                                {i === 0 ? "Before" : "After"} · {img.date}
+                              </figcaption>
+                            </figure>
+                          ))}
+                        </div>
+                        {a.evidence.interpretation ? (
+                          <p className="mt-2 text-xs text-neutral-600 dark:text-neutral-400">
+                            <span className="font-medium capitalize">{a.evidence.interpretation.direction.replace("_", " ")}</span>
+                            {" · "}
+                            {a.evidence.interpretation.summary}{" "}
+                            <span className="text-neutral-400">
+                              ({a.evidence.interpretation.confidence} confidence · read by {a.evidence.model})
+                            </span>
+                          </p>
+                        ) : (
+                          <p className="mt-2 text-[10px] text-neutral-400">
+                            {a.evidence.layerLabel} — image pair from NASA GIBS (no model interpretation cached).
+                          </p>
+                        )}
+                      </div>
+                    )}
                   </li>
                 ))}
               </ul>

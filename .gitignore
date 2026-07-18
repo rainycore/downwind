@@ -27,6 +27,8 @@ CLAUDE.local.md
 /AGENT.md
 /AGENTS.md
 /CLAUDE.md
+CLAUDE.md
+AGENTS.md
 /.github/copilot-instructions.md
 # .claude/ deployed content (rules, commands, CLAUDE.md come from sidecar)
 /.claude/CLAUDE.md
