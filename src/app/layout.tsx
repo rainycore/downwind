@@ -1,10 +1,19 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Fredoka, Nunito, Geist_Mono } from "next/font/google";
 import { Auth0Provider } from "@auth0/nextjs-auth0";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+// Fredoka for headings — rounded and cheerful without being a novelty face.
+// Nunito for body/UI — soft rounded terminals but a tall x-height, so it stays
+// very legible at 12–15px where most of the report lives.
+const display = Fredoka({
+  variable: "--font-fredoka",
+  subsets: ["latin"],
+  weight: ["400", "500", "600"],
+});
+
+const body = Nunito({
+  variable: "--font-nunito",
   subsets: ["latin"],
 });
 
@@ -32,7 +41,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${display.variable} ${body.variable} ${geistMono.variable} h-full antialiased`}
       suppressHydrationWarning
     >
       <head>

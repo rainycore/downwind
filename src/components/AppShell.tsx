@@ -1,6 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
+import Link from "next/link";
 import { ModeProvider, useMode } from "./ModeContext";
 import CartoonBackdrop from "./CartoonBackdrop";
 import ThemeToggle from "./ThemeToggle";
@@ -35,12 +36,15 @@ function Header({ user }: { user: ShellUser }) {
   return (
     <header className="sticky top-0 z-20 border-b border-[var(--border)] bg-[color-mix(in_srgb,var(--background)_88%,transparent)] backdrop-blur">
       <div className="mx-auto flex w-full max-w-3xl flex-wrap items-center justify-between gap-3 px-6 py-3">
-        <a href="/" className="flex items-baseline gap-2">
-          <span className="text-base font-semibold tracking-tight">Downwind</span>
-          <span className="hidden text-[11px] text-neutral-500 sm:inline">
-            satellites keep the receipts
+        {/* Clicking the wordmark always returns to the home screen. */}
+        <Link href="/" className="flex items-baseline gap-2 rounded-md hover:opacity-80">
+          <span className="font-display text-xl font-semibold tracking-tight sm:text-2xl">
+            Downwind
           </span>
-        </a>
+          <span className="hidden text-xs text-neutral-500 sm:inline sm:text-sm">
+            policy impact, from orbit
+          </span>
+        </Link>
 
         <div className="flex items-center gap-3">
           {user && <ModeToggle />}
