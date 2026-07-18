@@ -108,11 +108,12 @@ export default function Analyzer({ profile }: { profile: UserProfile }) {
         </p>
       )}
 
+      {/* Corner scene: animates while the analysis loads, then sweeps between
+          the real measured before/after satellite values. */}
+      {(loading || result) && <PolicyScene readings={sceneReadings} loading={loading} />}
+
       {result && (
         <section className="space-y-6">
-          {/* Cute corner scene, driven by the measured before/after readings */}
-          {sceneReadings.length > 0 && <PolicyScene readings={sceneReadings} />}
-
           {/* What it means for YOU, where you live — the "downwind" read */}
           {local && (
             <div className="rounded-lg bg-neutral-900 p-4 text-neutral-100 dark:bg-neutral-100 dark:text-neutral-900">
