@@ -1,10 +1,11 @@
 import type { NextRequest } from "next/server";
 import { auth0 } from "@/lib/auth0";
 
-// Auth0 v4 mounts /auth/login, /auth/logout, /auth/callback, /auth/profile
-// through this middleware. It also refreshes the session cookie on every
-// request. Route protection itself is done per-route (see /api/analyze).
-export async function middleware(request: NextRequest) {
+// Next 16 "proxy" convention (formerly middleware). Auth0 v4 mounts
+// /auth/login, /auth/logout, /auth/callback, /auth/profile through here and
+// refreshes the session cookie on every request. Route protection itself is
+// done per-route (see /api/analyze).
+export async function proxy(request: NextRequest) {
   return auth0.middleware(request);
 }
 
