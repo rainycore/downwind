@@ -63,3 +63,38 @@ body {
   color: var(--foreground);
   font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
 }
+
+/* ── Policy scene animations (see app/policy-scene.tsx) ─────────────────── */
+@keyframes dw-bob {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50%      { transform: translateY(-2.5px) rotate(-2deg); }
+}
+@keyframes dw-drift {
+  from { transform: translateX(-24px); }
+  to   { transform: translateX(190px); }
+}
+@keyframes dw-sway {
+  0%, 100% { transform: rotate(-1.6deg); }
+  50%      { transform: rotate(1.6deg); }
+}
+@keyframes dw-pulse {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.85; }
+}
+@keyframes dw-puff {
+  0%   { transform: translateY(0) scale(0.7); opacity: 0.55; }
+  100% { transform: translateY(-46px) scale(1.5); opacity: 0; }
+}
+
+.dw-bob   { animation: dw-bob 2.4s ease-in-out infinite; }
+.dw-drift { animation: dw-drift 26s linear infinite; }
+.dw-sway  { animation: dw-sway 4.5s ease-in-out infinite; transform-box: fill-box; }
+.dw-wave  { animation: dw-sway 1.8s ease-in-out infinite; transform-box: fill-box; }
+.dw-pulse { animation: dw-pulse 3.5s ease-in-out infinite; }
+.dw-puff  { animation: dw-puff 4.5s ease-out infinite; }
+.dw-puff-2 { animation-delay: 1.5s; }
+.dw-puff-3 { animation-delay: 2.8s; }
+
+@media (prefers-reduced-motion: reduce) {
+  .dw-bob, .dw-drift, .dw-sway, .dw-wave, .dw-pulse, .dw-puff { animation: none; }
+}

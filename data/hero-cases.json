@@ -1,0 +1,212 @@
+[
+  {
+    "policyId": "br-ppcdam-2004",
+    "title": "Brazil PPCDAm — Action Plan to Prevent & Control Legal Amazon Deforestation (2004)",
+    "region": "Brazil — Pará / Legal Amazon",
+    "enactedYear": 2004,
+    "domain": "land_cover",
+    "worldcoverClass": "Tree cover",
+    "bbox": [-53.5, -6.5, -50.5, -3.5],
+    "observableWindow": { "t0": "2016-06-01/2016-09-30", "t1": "2023-06-01/2023-09-30" },
+    "loc": { "type": "Point", "coordinates": [-52.0, -5.0] },
+    "text": "A federal action plan combining expanded real-time satellite enforcement (DETER/IBAMA), a wave of new protected areas and indigenous lands, and restricted subsidized rural credit for municipalities with high deforestation. Not a single land-use law but a bundle of enforcement, land-tenure, and fiscal-credit levers aimed at halting illegal clearing across the Legal Amazon.",
+    "documentedOutcome": "Brazilian Amazon annual primary-forest loss (PRODES) fell roughly 84%, from ~27,772 km2/yr in 2004 to ~4,571 km2/yr in 2012; econometric work attributes a large share to enforcement, protected-area creation, and the rural-credit restriction.",
+    "precomputedCounterfactual": {
+      "avoidedLossKm2": 73000,
+      "ci95": [50000, 96000],
+      "method": "municipality-panel difference-in-differences on conservation policies, 2005-2009 (published)",
+      "cite": "Assuncao, Gandour & Rocha (2015), Climate Policy Initiative / PUC-Rio",
+      "assumptions": ["non-random siting corrected in source study", "leakage/SUTVA displacement not fully controlled", "commodity-price co-drivers only partially controlled"],
+      "sourceVerified": false
+    }
+  },
+  {
+    "policyId": "br-enforcement-rollback-2019",
+    "title": "Brazil Amazon enforcement rollback (2019-2022)",
+    "region": "Brazil — Rondonia / SW Legal Amazon",
+    "enactedYear": 2019,
+    "domain": "land_cover",
+    "worldcoverClass": "Tree cover",
+    "bbox": [-63.5, -10.5, -61.5, -8.5],
+    "observableWindow": { "t0": "2019-06-01/2019-09-30", "t1": "2022-06-01/2022-09-30" },
+    "loc": { "type": "Point", "coordinates": [-62.5, -9.5] },
+    "text": "Reduced IBAMA enforcement budgets and fines, weakened environmental licensing, and signalled tolerance for land clearing in the Legal Amazon. Primarily an administrative and fiscal-economic reversal of the PPCDAm-era enforcement rather than an explicit land-use law — a natural inverse analog.",
+    "documentedOutcome": "After enforcement was cut from 2019, PRODES primary-forest loss climbed from ~10,129 km2 (2019) to ~13,038 km2 (2021), the highest in 15 years; dry-season FIRMS fire counts and Sentinel-5P CO spiked over the same window.",
+    "precomputedCounterfactual": {
+      "avoidedLossKm2": null,
+      "ci95": null,
+      "method": "observed PRODES increase vs pre-rollback trend (inverse case; no matched DiD)",
+      "cite": "INPE PRODES annual estimates; MapBiomas Alerta",
+      "assumptions": ["counterfactual is the pre-2019 declining trend", "COVID-era economic shifts co-vary", "attribution to policy vs price is partial"],
+      "sourceVerified": false
+    }
+  },
+  {
+    "policyId": "id-peat-moratorium-2016",
+    "title": "Indonesia permanent peatland & forest moratorium (2016 -> permanent 2019)",
+    "region": "Indonesia — Riau, Sumatra (peatland)",
+    "enactedYear": 2016,
+    "domain": "land_cover",
+    "worldcoverClass": "Tree cover",
+    "bbox": [101.0, -1.0, 103.0, 1.0],
+    "observableWindow": { "t0": "2016-07-01/2016-10-31", "t1": "2023-07-01/2023-10-31" },
+    "loc": { "type": "Point", "coordinates": [102.0, 0.0] },
+    "text": "Extended and later made permanent a moratorium on new concessions in primary forest and peatland, established the Peatland Restoration Agency (BRG), and blocked drainage of carbon-rich peat. Mixes land-use regulation with concession-economics and agricultural-subsidy levers.",
+    "documentedOutcome": "Active-fire counts and aerosol optical depth over peat provinces fell sharply after 2016 versus the catastrophic 2015 haze crisis; primary-forest loss in Indonesia declined for several consecutive years after 2016 (Global Forest Watch).",
+    "precomputedCounterfactual": {
+      "avoidedLossKm2": null,
+      "ci95": null,
+      "method": "post-2016 loss-rate decline vs 2015 baseline (GFW; no matched DiD)",
+      "cite": "Global Forest Watch / WRI Indonesia primary-forest-loss series",
+      "assumptions": ["wet La Nina years reduced fire independent of policy", "palm-oil price co-driver not controlled"],
+      "sourceVerified": false
+    }
+  },
+  {
+    "policyId": "cr-pes-1997",
+    "title": "Costa Rica Payments for Environmental Services (PES, 1997)",
+    "region": "Costa Rica",
+    "enactedYear": 1997,
+    "domain": "land_cover",
+    "worldcoverClass": "Tree cover",
+    "bbox": [-85.9, 8.3, -82.6, 11.2],
+    "observableWindow": { "t0": "2016-01-01/2016-03-31", "t1": "2023-01-01/2023-03-31" },
+    "loc": { "type": "Point", "coordinates": [-84.2, 9.7] },
+    "text": "A national program paying landowners for forest conservation and reforestation, funded largely by a fuel tax and administered by FONAFIFO. A fiscal/market-incentive lever (payments + earmarked tax) rather than a command-and-control land-use ban.",
+    "documentedOutcome": "National forest cover rebounded from ~40% in 1987 to over half the country by the 2010s under PES and complementary bans on land-use change — one of the clearest national reforestation reversals on record.",
+    "precomputedCounterfactual": {
+      "avoidedLossKm2": null,
+      "ci95": null,
+      "method": "parcel-matched avoided-deforestation studies find small-but-real additionality (published)",
+      "cite": "Daniels et al. (2010), Ecological Economics; Robalino & Pfaff (2013)",
+      "assumptions": ["much reforestation coincided with agricultural transition, not only PES", "additionality of payments is modest in matched studies"],
+      "sourceVerified": false
+    }
+  },
+  {
+    "policyId": "cn-grain-for-green-1999",
+    "title": "China Grain-for-Green / Sloping Land Conversion Program (1999)",
+    "region": "China — Loess Plateau (Shaanxi)",
+    "enactedYear": 1999,
+    "domain": "land_cover",
+    "worldcoverClass": "Cropland",
+    "bbox": [108.0, 35.0, 110.5, 37.5],
+    "observableWindow": { "t0": "2016-06-01/2016-08-31", "t1": "2023-06-01/2023-08-31" },
+    "loc": { "type": "Point", "coordinates": [109.2, 36.2] },
+    "text": "A subsidy program paying farmers in grain and cash to convert steeply sloping cropland to forest or grassland to curb erosion. A pure fiscal-subsidy lever with large land-cover consequences — cropland converted to tree/grass cover across the Loess Plateau.",
+    "documentedOutcome": "The program converted on the order of 15 Mha of sloped cropland nationally; Loess Plateau vegetation cover and NDVI rose markedly, cutting sediment load to the Yellow River, though with documented soil-water and water-yield trade-offs.",
+    "precomputedCounterfactual": {
+      "avoidedLossKm2": null,
+      "ci95": null,
+      "method": "NDVI / vegetation-cover trend attribution (published; not avoided-loss framing)",
+      "cite": "Chen et al. (2015), Nature Climate Change; Feng et al. (2016), Nature Climate Change",
+      "assumptions": ["regional warming/CO2 fertilization co-drive greening", "water-yield reductions are a real trade-off"],
+      "sourceVerified": false
+    }
+  },
+  {
+    "policyId": "np-community-forestry-1993",
+    "title": "Nepal Community Forestry (Forest Act 1993)",
+    "region": "Nepal — Middle Hills",
+    "enactedYear": 1993,
+    "domain": "land_cover",
+    "worldcoverClass": "Tree cover",
+    "bbox": [83.5, 27.5, 85.5, 28.8],
+    "observableWindow": { "t0": "2016-10-01/2016-11-30", "t1": "2023-10-01/2023-11-30" },
+    "loc": { "type": "Point", "coordinates": [84.5, 28.1] },
+    "text": "Devolved management of national forest to local Community Forest User Groups, giving communities rights and responsibilities over nearby forest. A land-tenure/governance lever rather than a spending program.",
+    "documentedOutcome": "Handover to community user groups is associated with measurable canopy regrowth and increased forest density across the middle hills over subsequent decades.",
+    "precomputedCounterfactual": {
+      "avoidedLossKm2": null,
+      "ci95": null,
+      "method": "before/after and matched-village canopy comparisons (published)",
+      "cite": "Nagendra (2007), PNAS; Gautam et al. (2004)",
+      "assumptions": ["out-migration and remittances reduced fuelwood pressure concurrently"],
+      "sourceVerified": false
+    }
+  },
+  {
+    "policyId": "ca-bc-firesmart-2018",
+    "title": "BC FireSmart & fuel-management funding (2018 -> )",
+    "region": "Canada — British Columbia interior",
+    "enactedYear": 2018,
+    "domain": "land_cover",
+    "worldcoverClass": "Tree cover",
+    "bbox": [-121.5, 49.8, -119.5, 51.2],
+    "observableWindow": { "t0": "2018-07-01/2018-09-30", "t1": "2023-07-01/2023-09-30" },
+    "loc": { "type": "Point", "coordinates": [-120.5, 50.5] },
+    "text": "Sustained provincial funding for community fuel-reduction, prescribed burns, and wildfire prevention. An economic/budget lever whose climate-adjacent effect is mediated through fuel loads and subsequent burn severity.",
+    "documentedOutcome": "In treated wildland-urban-interface units, Landsat/Sentinel NBR burn severity is lower where fuel treatments preceded fire; treated-versus-untreated contrasts are visible in post-2021 season imagery.",
+    "precomputedCounterfactual": {
+      "avoidedLossKm2": null,
+      "ci95": null,
+      "method": "treated-vs-untreated burn-severity (dNBR) contrasts (published field studies)",
+      "cite": "BC Wildfire Service fuel-treatment evaluations; FireSmart Canada",
+      "assumptions": ["treatment siting is non-random (near communities)", "weather dominates severity in extreme years"],
+      "sourceVerified": false
+    }
+  },
+  {
+    "policyId": "ca-on-forest-cuts-2019",
+    "title": "Ontario forest-management & conservation budget cuts (2019)",
+    "region": "Canada — Ontario boreal",
+    "enactedYear": 2019,
+    "domain": "land_cover",
+    "worldcoverClass": "Tree cover",
+    "bbox": [-85.5, 48.5, -83.0, 50.0],
+    "observableWindow": { "t0": "2019-06-01/2019-08-31", "t1": "2023-06-01/2023-08-31" },
+    "loc": { "type": "Point", "coordinates": [-84.2, 49.2] },
+    "text": "Reduced conservation-authority funding and forest-management program spending. A purely economic policy with no explicit climate language, but with downstream effects on fuel management and monitoring capacity — a non-obvious fiscal lever.",
+    "documentedOutcome": "Reduced prescribed-burn and thinning activity correlates with higher modelled fuel accumulation; FIRMS shows sustained boreal fire activity, though attribution to the cuts alone is weak and is flagged as such.",
+    "precomputedCounterfactual": {
+      "avoidedLossKm2": null,
+      "ci95": null,
+      "method": "weak/qualitative — no defensible matched counterfactual (flagged)",
+      "cite": "Ontario Auditor General reports on forest management",
+      "assumptions": ["confounded by climate-driven fire-season lengthening", "attribution to budget alone is weak"],
+      "sourceVerified": false
+    }
+  },
+  {
+    "policyId": "in-bhadla-solar-2015",
+    "title": "India Bhadla Solar Park build-out (Rajasthan, 2015-2019)",
+    "region": "India — Bhadla, Rajasthan (Thar desert margin)",
+    "enactedYear": 2015,
+    "domain": "land_cover",
+    "worldcoverClass": "Bare / sparse vegetation",
+    "bbox": [71.0, 27.2, 72.2, 28.2],
+    "observableWindow": { "t0": "2016-11-01/2016-12-31", "t1": "2023-11-01/2023-12-31" },
+    "loc": { "type": "Point", "coordinates": [71.6, 27.7] },
+    "text": "State-backed solar-energy policy and land allocation that converted arid scrub/sparse land into one of the world's largest solar parks. An energy/infrastructure policy that is a hidden land-cover lever: renewable build-out changes surface cover at landscape scale.",
+    "documentedOutcome": "The Bhadla Solar Park (~2.2 GW, largely commissioned 2018-2019) converted roughly 57 km2 of arid Thar land into a contiguous built solar footprint — a large geometric change plainly visible in true-color imagery.",
+    "precomputedCounterfactual": {
+      "avoidedLossKm2": null,
+      "ci95": null,
+      "method": "land-cover conversion footprint (observed area; not avoided-loss)",
+      "cite": "IRENA / MNRE project documentation; Sentinel-2 true-color",
+      "assumptions": ["arid siting minimizes forest/cropland displacement here (not generalizable)"],
+      "sourceVerified": false
+    }
+  },
+  {
+    "policyId": "et-tigray-restoration-1991",
+    "title": "Ethiopia Tigray land restoration — exclosures & terracing (1991 -> )",
+    "region": "Ethiopia — Tigray highlands",
+    "enactedYear": 1991,
+    "domain": "land_cover",
+    "worldcoverClass": "Shrubland",
+    "bbox": [38.8, 13.2, 39.8, 14.2],
+    "observableWindow": { "t0": "2016-10-01/2016-12-31", "t1": "2022-10-01/2022-12-31" },
+    "loc": { "type": "Point", "coordinates": [39.3, 13.7] },
+    "text": "Regional restoration combining community exclosures (protecting degraded hillslopes from grazing), mass mobilization for terracing, and area closures. A labor/governance and land-use lever aimed at reversing severe land degradation.",
+    "documentedOutcome": "Community exclosures and terracing since the early 1990s greened degraded hillslopes; NDVI, vegetation cover, and biomass recovery are documented across Tigray, with restored spring flow in places.",
+    "precomputedCounterfactual": {
+      "avoidedLossKm2": null,
+      "ci95": null,
+      "method": "exclosure-vs-open-grazing NDVI/biomass comparisons (published)",
+      "cite": "Nyssen et al. (2015), Land Degradation & Development; Aerts et al. (2009)",
+      "assumptions": ["rainfall recovery co-varies with restoration", "recent conflict (2020-22) may disturb the t1 signal"],
+      "sourceVerified": false
+    }
+  }
+]

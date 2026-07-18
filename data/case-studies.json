@@ -5,6 +5,8 @@
     "region": "Brazil — Legal Amazon",
     "enactedYear": 2019,
     "loc": { "type": "Point", "coordinates": [-60.0, -3.5] },
+    "window": { "beforeDate": "2018-08-13", "afterDate": "2022-08-13", "boxDeg": 1.5 },
+    "dimensions": ["vegetation", "heat", "aerosol", "no2", "precipitation", "ozone"],
     "text": "Reduced IBAMA enforcement budgets and fines, weakened environmental licensing, and signalled tolerance for land clearing in the Legal Amazon. Primarily an administrative/economic policy shift rather than an explicit land-use law.",
     "observedDelta": "Sentinel-2 / PRODES show annual primary-forest loss rising from ~9,760 km² (2019) to ~13,038 km² (2021); dry-season FIRMS fire counts and Sentinel-5P CO spiked over the same window."
   },
@@ -14,6 +16,8 @@
     "region": "Indonesia — Sumatra & Kalimantan",
     "enactedYear": 2016,
     "loc": { "type": "Point", "coordinates": [113.9, -0.8] },
+    "window": { "beforeDate": "2015-10-01", "afterDate": "2019-10-01", "boxDeg": 2.5 },
+    "dimensions": ["aerosol", "vegetation", "precipitation", "no2", "ozone"],
     "text": "Extended and later made permanent a moratorium on new concessions in primary forest and peatland, plus a peatland restoration agency. Mixes land-use regulation with agricultural-subsidy and concession-economics levers.",
     "observedDelta": "MODIS/VIIRS active-fire counts and AOD over peat provinces fell sharply after 2016 vs the 2015 haze crisis; NBR burn-severity deltas show fewer large peat burns in subsequent dry seasons."
   },
@@ -23,6 +27,8 @@
     "region": "Canada — British Columbia",
     "enactedYear": 2018,
     "loc": { "type": "Point", "coordinates": [-121.5, 50.7] },
+    "window": { "beforeDate": "2018-08-15", "afterDate": "2022-08-15", "boxDeg": 1.0 },
+    "dimensions": ["vegetation", "heat", "aerosol", "snow", "precipitation"],
     "text": "Sustained provincial funding for community fuel-reduction, prescribed burns, and wildfire prevention. An economic/budget lever whose climate-adjacent effect is mediated through fuel loads.",
     "observedDelta": "Landsat NBR in treated wildland-urban-interface units shows lower burn severity where fuel treatments preceded fire; treated-vs-untreated pairs visible in post-2021 season imagery."
   },
@@ -32,6 +38,8 @@
     "region": "Canada — Ontario",
     "enactedYear": 2019,
     "loc": { "type": "Point", "coordinates": [-85.0, 49.5] },
+    "window": { "beforeDate": "2019-08-15", "afterDate": "2023-08-15", "boxDeg": 2.0 },
+    "dimensions": ["vegetation", "heat", "aerosol", "precipitation", "snow"],
     "text": "Reduced conservation-authority funding and forest-management program spending. A purely economic policy with no explicit climate language, but with downstream effects on fuel management and monitoring capacity.",
     "observedDelta": "Reduced prescribed-burn and thinning activity correlates with higher modelled fuel accumulation; FIRMS shows sustained boreal fire activity, though attribution to the cuts alone is weak and flagged as such."
   }

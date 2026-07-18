@@ -1,0 +1,15 @@
+{
+  "_comment": "Atlas Vector Search index definition for the `policies` collection. Create it in Atlas UI (Search -> Create Search Index -> JSON Editor) or via the Atlas CLI, named `policy_vector_index` to match src/lib/pipeline.ts. Embeddings are gemini-embedding-001 at 768 dims.",
+  "fields": [
+    {
+      "type": "vector",
+      "path": "embedding",
+      "numDimensions": 768,
+      "similarity": "cosine"
+    },
+    {
+      "type": "filter",
+      "path": "domain"
+    }
+  ]
+}

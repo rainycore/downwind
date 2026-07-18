@@ -1,16 +1,19 @@
 import { NextResponse } from "next/server";
 import { auth0 } from "@/lib/auth0";
 import { analyzePolicy } from "@/lib/pipeline";
-import { DEV_AUTH_BYPASS } from "@/lib/devAuth";
+import { getProfile } from "@/lib/profile";
 
 export const runtime = "nodejs";
-export const maxDuration = 60;
+// The uncached pipeline makes ~6 sequential Gemini calls (extract, re-rank,
+// vision, horizons, personalize) + a sidecar EO round-trip. On the free tier
+// (flash) that can take 2-3 min the first time; cached hero-case runs are
+// instant. Give the first-touch path room so it doesn't hard-fail.
+export const maxDuration = 300;
 
 export async function POST(request: Request) {
   // Auth0-gated: only signed-in users can run (and thus cost) an analysis.
-  // The dev-only bypass lets local testing hit the pipeline without a tenant.
   const session = await auth0.getSession();
-  if (!session && !DEV_AUTH_BYPASS) {
+  if (!session) {
     return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
   }
 
@@ -26,8 +29,14 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Policy text is too short." }, { status: 400 });
   }
 
+  // Analyses are tailored to the reader; require an onboarded profile.
+  const profile = await getProfile(session.user.sub);
+  if (!profile) {
+    return NextResponse.json({ error: "Complete your profile before running an analysis.", needsProfile: true }, { status: 428 });
+  }
+
   try {
-    const result = await analyzePolicy(policy);
+    const result = await analyzePolicy(policy, profile);
     return NextResponse.json(result);
   } catch (err) {
     console.error("analyze failed:", err);
