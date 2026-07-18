@@ -2,6 +2,9 @@
 
 import type { ReactNode } from "react";
 import { ModeProvider, useMode } from "./ModeContext";
+import CartoonBackdrop from "./CartoonBackdrop";
+import ThemeToggle from "./ThemeToggle";
+import { ButtonLink } from "./ui/Button";
 
 export type ShellUser = { email: string | null; name: string | null } | null;
 
@@ -41,6 +44,7 @@ function Header({ user }: { user: ShellUser }) {
 
         <div className="flex items-center gap-3">
           {user && <ModeToggle />}
+          <ThemeToggle />
           {user ? (
             <div className="flex items-center gap-2 text-xs">
               <span className="hidden max-w-[12rem] truncate text-neutral-500 sm:inline">
@@ -51,12 +55,14 @@ function Header({ user }: { user: ShellUser }) {
               </a>
             </div>
           ) : (
-            <a
-              className="rounded-md bg-[var(--accent)] px-3 py-1.5 text-xs font-medium text-[var(--accent-fg)]"
-              href="/auth/login"
-            >
-              Sign in
-            </a>
+            <div className="flex items-center gap-2">
+              <ButtonLink href="/auth/login" variant="quiet" size="sm">
+                Sign in
+              </ButtonLink>
+              <ButtonLink href="/auth/login?screen_hint=signup" variant="primary" size="sm">
+                Sign up
+              </ButtonLink>
+            </div>
           )}
         </div>
       </div>
@@ -70,6 +76,7 @@ function Header({ user }: { user: ShellUser }) {
 export default function AppShell({ user, children }: { user: ShellUser; children: ReactNode }) {
   return (
     <ModeProvider>
+      <CartoonBackdrop />
       <Header user={user} />
       <main className="mx-auto w-full max-w-3xl px-6 py-10">{children}</main>
     </ModeProvider>
