@@ -17,7 +17,8 @@ import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
 import { MongoClient } from "mongodb";
-import { imagePair, fetchPngBase64, type LayerKey } from "../src/lib/gibs";
+import { imagePair, fetchPng, type LayerKey } from "../src/lib/gibs";
+import { greennessDelta } from "../src/lib/greenness";
 import { interpretImagePair, ollamaUp, OLLAMA_MODEL } from "../src/lib/ollama";
 import type { SatelliteEvidence } from "../src/lib/reader";
 
@@ -63,19 +64,32 @@ async function main() {
 
     let interpretation: SatelliteEvidence["interpretation"] = null;
     let model: string | null = null;
+    let greenness: SatelliteEvidence["greenness"] = null;
 
-    if (hasOllama) {
+    // Always fetch the pixels — the greenness delta is measured, no GPU/LLM.
+    let beforePng: Buffer | null = null;
+    let afterPng: Buffer | null = null;
+    try {
+      [beforePng, afterPng] = await Promise.all([fetchPng(pair.before.url), fetchPng(pair.after.url)]);
+      greenness = greennessDelta(beforePng, afterPng);
+      console.log(`  · ${c.policyId}: measured greenness ${greenness.before} → ${greenness.after} (${greenness.deltaPct > 0 ? "+" : ""}${greenness.deltaPct}%)`);
+    } catch (err) {
+      console.warn(`    ! ${c.policyId}: image fetch/greenness failed — ${(err as Error).message}`);
+    }
+
+    // Optional qualitative read from local Gemma vision, if a runner is up.
+    if (hasOllama && beforePng && afterPng) {
       try {
-        const [beforeB64, afterB64] = await Promise.all([
-          fetchPngBase64(pair.before.url),
-          fetchPngBase64(pair.after.url),
-        ]);
         const context = `Region: ${c.region}. Observable: ${c.dimension ?? "surface change"}. Before date: ${pair.before.date}. After date: ${pair.after.date}. This spans a policy enacted around ${c.enactedYear}.`;
-        console.log(`  … ${c.policyId}: running Gemma vision (this is slow on 8 GB)…`);
-        interpretation = await interpretImagePair({ beforeB64, afterB64, context });
+        console.log(`  … ${c.policyId}: running Gemma vision…`);
+        interpretation = await interpretImagePair({
+          beforeB64: beforePng.toString("base64"),
+          afterB64: afterPng.toString("base64"),
+          context,
+        });
         if (interpretation) model = OLLAMA_MODEL;
       } catch (err) {
-        console.warn(`    ! ${c.policyId}: image fetch/interpret failed — ${(err as Error).message}`);
+        console.warn(`    ! ${c.policyId}: interpret failed — ${(err as Error).message}`);
       }
     }
 
@@ -89,6 +103,7 @@ async function main() {
       after: pair.after,
       interpretation,
       model,
+      greenness,
     };
 
     await col.updateOne({ policyId: c.policyId }, { $set: evidence }, { upsert: true });

@@ -61,4 +61,11 @@ export type SatelliteEvidence = {
     confidence: "high" | "medium" | "low";
   } | null;
   model: string | null; // which VLM produced the interpretation
+  // A REAL number measured from the image pixels (no GPU/LLM): mean greenness
+  // (0..1) in each image and the signed % change. null if imagery unavailable.
+  greenness: {
+    before: number;
+    after: number;
+    deltaPct: number;
+  } | null;
 };

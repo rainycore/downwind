@@ -201,8 +201,26 @@ export default function Analyzer({ profile }: { profile: UserProfile }) {
                             </figure>
                           ))}
                         </div>
+                        {/* Measured directly from the image pixels — a real number */}
+                        {a.evidence.greenness && (
+                          <p className="mt-2 flex items-baseline gap-2 text-xs">
+                            <span
+                              className={`font-semibold ${
+                                a.evidence.greenness.deltaPct < 0
+                                  ? "text-rose-600 dark:text-rose-400"
+                                  : "text-emerald-600 dark:text-emerald-400"
+                              }`}
+                            >
+                              {a.evidence.greenness.deltaPct > 0 ? "+" : ""}
+                              {a.evidence.greenness.deltaPct}% greenness
+                            </span>
+                            <span className="text-neutral-400">
+                              measured from NDVI pixels ({a.evidence.greenness.before} → {a.evidence.greenness.after})
+                            </span>
+                          </p>
+                        )}
                         {a.evidence.interpretation ? (
-                          <p className="mt-2 text-xs text-neutral-600 dark:text-neutral-400">
+                          <p className="mt-1 text-xs text-neutral-600 dark:text-neutral-400">
                             <span className="font-medium capitalize">{a.evidence.interpretation.direction.replace("_", " ")}</span>
                             {" · "}
                             {a.evidence.interpretation.summary}{" "}
@@ -211,8 +229,8 @@ export default function Analyzer({ profile }: { profile: UserProfile }) {
                             </span>
                           </p>
                         ) : (
-                          <p className="mt-2 text-[10px] text-neutral-400">
-                            {a.evidence.layerLabel} — image pair from NASA GIBS (no model interpretation cached).
+                          <p className="mt-1 text-[10px] text-neutral-400">
+                            {a.evidence.layerLabel} — image pair from NASA GIBS.
                           </p>
                         )}
                       </div>

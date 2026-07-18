@@ -101,9 +101,9 @@ export function imagePair(opts: {
   };
 }
 
-// Fetch a PNG and return base64 (for feeding a local VLM). Best-effort: throws
-// on non-image responses so callers can degrade gracefully.
-export async function fetchPngBase64(url: string): Promise<string> {
+// Fetch a PNG as raw bytes. Best-effort: throws on non-image / blank responses
+// so callers can degrade gracefully.
+export async function fetchPng(url: string): Promise<Buffer> {
   const res = await fetch(url);
   if (!res.ok) throw new Error(`GIBS ${res.status} for ${url}`);
   const type = res.headers.get("content-type") ?? "";
@@ -111,5 +111,10 @@ export async function fetchPngBase64(url: string): Promise<string> {
   const buf = Buffer.from(await res.arrayBuffer());
   // A ~1KB PNG from Snapshots is a blank/transparent tile (no data for date).
   if (buf.length < 2000) throw new Error("GIBS returned a blank tile (no data for date)");
-  return buf.toString("base64");
+  return buf;
+}
+
+// Same, base64-encoded — for feeding a local VLM.
+export async function fetchPngBase64(url: string): Promise<string> {
+  return (await fetchPng(url)).toString("base64");
 }
