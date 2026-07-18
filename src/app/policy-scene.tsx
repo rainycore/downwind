@@ -56,7 +56,14 @@ const mix = (a: RGB, b: RGB, t: number): RGB =>
   a.map((v, i) => Math.round(v + (b[i] - v) * clamp01(t))) as unknown as RGB;
 const css = (c: RGB) => `rgb(${c.join(",")})`;
 
-const CYCLE_MS = 7000; // one full there-and-back sweep
+// The analyzer holds the loading state for at least this long (even on an
+// instant cache hit) so the scene has room to play; genuinely slow analyses
+// just keep easing. Both files share this constant so the pacing stays in sync.
+export const MIN_LOADING_MS = 7000;
+
+const TAU_MS = MIN_LOADING_MS * 0.5; // ~78% of the sweep done by the minimum
+const FINISH_MS = 900; // the closing run once results land
+const CEILING = 0.9; // loading never quite completes — the result finishes it
 
 export default function PolicyScene({
   readings,
@@ -65,36 +72,61 @@ export default function PolicyScene({
   readings: DimensionReading[];
   loading?: boolean;
 }) {
-  // `t` sweeps 0→1→0 forever, easing at the turns. Every visual property is a
-  // function of it, so nothing ever "jumps" between two states.
-  const [t, setT] = useState(0);
-  const raf = useRef<number | null>(null);
+  const measured = readings.some((r) => r.metric);
+  const [scene, setScene] = useState<Scene>(LOADING_A);
+  const [progress, setProgress] = useState(0);
 
+  // Where the animation is headed: the real measured "after" world once we have
+  // readings. Kept in a ref so the rAF loop always sees the latest props.
+  const sceneRef = useRef<Scene>(LOADING_A);
+  const targetRef = useRef<Scene>(LOADING_B);
+  // Declared before the animation effect so the target is always current by the
+  // time the closing run starts.
   useEffect(() => {
-    const reduced = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
-    if (reduced) {
-      setT(1); // hold the "after" state rather than animating
+    targetRef.current = measured ? sceneFrom(readings, "after") : LOADING_B;
+  });
+
+  // The sweep is a progress indicator: while loading it eases asymptotically
+  // toward CEILING (so it never stalls at 100% no matter how long the analysis
+  // takes), then runs the remaining distance the instant results arrive — so it
+  // finishes exactly as the output does.
+  useEffect(() => {
+    if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) {
+      setScene(targetRef.current);
+      setProgress(1);
       return;
     }
     let start: number | null = null;
+    let snapshot: Scene | null = null;
+    let rafId = 0;
+
     const tick = (ts: number) => {
       start ??= ts;
-      const p = ((ts - start) % CYCLE_MS) / CYCLE_MS; // 0..1 sawtooth
-      const tri = p < 0.5 ? p * 2 : 2 - p * 2; // 0..1..0 ping-pong
-      setT(tri * tri * (3 - 2 * tri)); // smoothstep easing
-      raf.current = requestAnimationFrame(tick);
+      const elapsed = ts - start;
+      if (loading) {
+        const p = CEILING * (1 - Math.exp(-elapsed / TAU_MS));
+        const s = lerpScene(LOADING_A, LOADING_B, p);
+        sceneRef.current = s;
+        setScene(s);
+        setProgress(p);
+        rafId = requestAnimationFrame(tick);
+      } else {
+        snapshot ??= sceneRef.current; // land smoothly from wherever we got to
+        const f = Math.min(1, elapsed / FINISH_MS);
+        const e = f * f * (3 - 2 * f);
+        const s = lerpScene(snapshot, targetRef.current, e);
+        sceneRef.current = s;
+        setScene(s);
+        setProgress(CEILING + (1 - CEILING) * e);
+        if (f < 1) rafId = requestAnimationFrame(tick); // stop once settled
+      }
     };
-    raf.current = requestAnimationFrame(tick);
-    return () => {
-      if (raf.current !== null) cancelAnimationFrame(raf.current);
-    };
-  }, []);
 
-  const measured = readings.some((r) => r.metric);
-  const from = loading || !measured ? LOADING_A : sceneFrom(readings, "before");
-  const to = loading || !measured ? LOADING_B : sceneFrom(readings, "after");
-  const s = lerpScene(from, to, t);
+    rafId = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(rafId);
+  }, [loading]);
 
+  const s = scene;
   const dates = readings.find((r) => r.metric);
 
   // Derived palette — every colour is a continuous function of a measured value.
@@ -107,7 +139,6 @@ export default function PolicyScene({
   const maskOn = clamp01((s.haze - 0.32) / 0.22); // mask fades in with haze
   const puffOn = clamp01((s.haze - 0.28) / 0.3);
   const sunY = 26 - s.warm * 4; // sun rides a little higher when hotter
-  const duckX = Math.sin(t * Math.PI * 2) * (pondRx * 0.3); // duck paddles about
 
   return (
     <figure className="pointer-events-none fixed bottom-4 right-4 z-40 hidden w-[208px] rounded-xl border border-neutral-200 bg-white/90 p-2 shadow-lg backdrop-blur sm:block dark:border-neutral-700 dark:bg-neutral-900/90">
@@ -138,18 +169,20 @@ export default function PolicyScene({
         {/* pond — width tracks precipitation */}
         <ellipse cx="148" cy="128" rx={pondRx} ry="9" fill="#7ec8e3" opacity={0.9} />
 
-        {/* the cute yellow duck, bobbing and paddling across the pond */}
-        <g className="dw-bob" transform={`translate(${duckX} 0)`}>
-          <ellipse cx="148" cy="122" rx="10" ry="7" fill="#ffd93d" />
-          <circle cx="156" cy="115" r="5.5" fill="#ffd93d" />
-          <polygon points="161,115 168,117 161,119" fill="#ff9f1c" />
-          <circle cx="157.5" cy="113.5" r="1.1" fill="#3d2c00" />
-          <path d="M143 122 q5 4 10 0" stroke="#f0c419" strokeWidth="1.2" fill="none" />
+        {/* the cute yellow duck — paddles side to side (outer) while bobbing (inner) */}
+        <g className="dw-paddle">
+          <g className="dw-bob">
+            <ellipse cx="148" cy="122" rx="10" ry="7" fill="#ffd93d" />
+            <circle cx="156" cy="115" r="5.5" fill="#ffd93d" />
+            <polygon points="161,115 168,117 161,119" fill="#ff9f1c" />
+            <circle cx="157.5" cy="113.5" r="1.1" fill="#3d2c00" />
+            <path d="M143 122 q5 4 10 0" stroke="#f0c419" strokeWidth="1.2" fill="none" />
+          </g>
         </g>
 
-        {/* cartoon girl — her mask fades in as measured haze rises */}
-        <g>
-          <ellipse cx="95" cy="126" rx="11" ry="3" fill="rgba(0,0,0,.12)" />
+        {/* cartoon girl — sways gently on the spot; mask fades in with haze */}
+        <ellipse cx="95" cy="126" rx="11" ry="3" fill="rgba(0,0,0,.12)" />
+        <g className="dw-girl-sway">
           <rect x="92" y="108" width="2.5" height="14" fill="#5b4636" />
           <rect x="97" y="108" width="2.5" height="14" fill="#5b4636" />
           <path d="M87 108 L95 88 L103 108 Z" fill="#ef6f9c" />
@@ -183,7 +216,7 @@ export default function PolicyScene({
             <div className="relative h-0.5 w-full rounded bg-neutral-200 dark:bg-neutral-700">
               <div
                 className="absolute -top-[3px] h-2 w-2 rounded-full bg-emerald-500"
-                style={{ left: `calc(${t * 100}% - 4px)` }}
+                style={{ left: `calc(${progress * 100}% - 4px)` }}
               />
             </div>
             <div className="mt-1 flex justify-between">

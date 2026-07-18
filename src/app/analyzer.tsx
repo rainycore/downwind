@@ -3,7 +3,7 @@
 import { useState } from "react";
 import type { AnalysisResult } from "@/lib/pipeline";
 import type { UserProfile } from "@/lib/reader";
-import PolicyScene from "./policy-scene";
+import PolicyScene, { MIN_LOADING_MS } from "./policy-scene";
 
 const SAMPLE = `Ontario reduces conservation-authority funding and forest-management program spending by 30%, with no explicit climate provisions, framed purely as a budget-balancing measure.`;
 
@@ -42,6 +42,7 @@ export default function Analyzer({ profile }: { profile: UserProfile }) {
     setLoading(true);
     setError(null);
     setResult(null);
+    const startedAt = Date.now();
     try {
       const res = await fetch("/api/analyze", {
         method: "POST",
@@ -50,6 +51,10 @@ export default function Analyzer({ profile }: { profile: UserProfile }) {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Request failed");
+      // Hold the loading state to a floor so the corner scene gets a full run
+      // even on an instant cache hit. Slow analyses are unaffected.
+      const remaining = MIN_LOADING_MS - (Date.now() - startedAt);
+      if (remaining > 0) await new Promise((r) => setTimeout(r, remaining));
       setResult(data as AnalysisResult);
       setMode(data.role === "lawmaker" ? "briefing" : "simple");
     } catch (e) {
