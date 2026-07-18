@@ -40,3 +40,41 @@ export type Personalization = {
   briefing: string; // mechanisms, confidence, citations — for lawmakers / technical readers
   local: LocalImpact;
 };
+
+// ── Satellite evidence (Receipts mode) ──────────────────────────────────────
+// Per climate dimension, a before/after image pair (what the situation was →
+// how it changed, grounding the future horizons) plus a REAL measured value
+// inverted from the GIBS colormap pixels — no GPU, no external raster service.
+
+// One dimension's reading for one analogue region.
+export type DimensionReading = {
+  key: string; // DimensionKey, e.g. "vegetation"
+  label: string; // "Vegetation & land cover"
+  dataset: string; // provenance for Receipts
+  before: { date: string; url: string };
+  after: { date: string; url: string };
+  // Physical measurement inverted from the colormap. null if the scene was
+  // blank/too gap-covered to measure (imagery still shown).
+  metric: {
+    unit: string; // "NDVI", "°C", "AOD", "DU", "molecules/cm²", "mm/hr", "% cover"
+    before: number;
+    after: number;
+    deltaPct: number;
+    coverage: number; // 0..1 fraction of pixels that mapped to the palette
+    goodDirection: "up" | "down" | "neutral"; // is an increase env-good?
+  } | null;
+  // Optional qualitative read from local Gemma vision (precompute only).
+  interpretation: {
+    observable: string;
+    summary: string;
+    direction: "improved" | "degraded" | "mixed" | "no_change";
+    confidence: "high" | "medium" | "low";
+  } | null;
+};
+
+export type SatelliteEvidence = {
+  policyId: string;
+  region: string;
+  model: string | null; // which VLM produced any interpretations
+  readings: DimensionReading[]; // one per climate dimension
+};

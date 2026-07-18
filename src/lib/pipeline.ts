@@ -8,6 +8,7 @@ import {
   type Personalization,
   type UserProfile,
   type PolicyExtraction,
+  type SatelliteEvidence,
 } from "./schemas";
 import { extractMechanisms, type ExtractionResult } from "./extract";
 import { buildLayer4 } from "./vision";
@@ -30,6 +31,10 @@ export type Analogue = {
   enactedYear: number;
   score: number;
   observedDelta: string;
+  // "Receipts" evidence precomputed by scripts/evidence.ts (main-branch feature):
+  // per-dimension before/after GIBS pairs + colormap-inverted metrics + local
+  // Gemma read. Attached in analyzePolicy; absent when `observations` is unseeded.
+  evidence?: SatelliteEvidence;
 };
 
 // The enriched hero-case document as stored in Mongo (seed = data/hero-cases.json).
@@ -380,6 +385,19 @@ export async function analyzePolicy(
 
   const core = await analyzeCore(policyText, "user_paste", usages);
   const legacy = deriveLegacy(core.contract);
+
+  // Join the precomputed satellite "Receipts" (before/after GIBS pairs +
+  // colormap-inverted metrics + local Gemma read) cached in `observations` by
+  // scripts/evidence.ts. Best-effort: missing evidence just omits the panel.
+  const analogIds = legacy.analogues.map((a) => a.policyId);
+  if (analogIds.length) {
+    const evidence = await db
+      .collection<SatelliteEvidence>(COLLECTIONS.observations)
+      .find({ policyId: { $in: analogIds } }, { projection: { _id: 0 } })
+      .toArray();
+    const byId = new Map(evidence.map((e) => [e.policyId, e]));
+    for (const a of legacy.analogues) a.evidence = byId.get(a.policyId);
+  }
 
   const persoKey = `${core.inputHash}:${profileHash(profile)}`;
   const cachedPerso = await db

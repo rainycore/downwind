@@ -88,4 +88,5 @@ export {
   type UserProfile,
   type LocalImpact,
   type Personalization,
+  type SatelliteEvidence,
 } from "./reader";
