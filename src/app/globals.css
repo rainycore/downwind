@@ -98,3 +98,42 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .dw-bob, .dw-drift, .dw-sway, .dw-wave, .dw-pulse, .dw-puff { animation: none; }
 }
+
+@keyframes dw-fall {
+  0%   { transform: translate(0, 0) rotate(0deg); opacity: 1; }
+  100% { transform: translate(6px, 30px) rotate(160deg); opacity: 0; }
+}
+@keyframes dw-shimmer {
+  0%, 100% { opacity: 0.45; }
+  50%      { opacity: 1; }
+}
+.dw-fall    { animation: dw-fall 5s ease-in infinite; transform-box: fill-box; }
+.dw-shimmer { animation: dw-shimmer 1.6s ease-in-out infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+  .dw-fall, .dw-shimmer { animation: none; }
+}
+
+/* The duck walks back and forth across the pond, tipping slightly as it turns. */
+@keyframes dw-paddle {
+  0%, 100% { transform: translateX(-9px) rotate(-2deg); }
+  50%      { transform: translateX(9px) rotate(2deg); }
+}
+/* The girl keeps swaying on the spot once the scene has settled. */
+@keyframes dw-girl-sway {
+  0%, 100% { transform: rotate(-1.8deg); }
+  50%      { transform: rotate(1.8deg); }
+}
+.dw-paddle {
+  animation: dw-paddle 7s ease-in-out infinite;
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+}
+.dw-girl-sway {
+  animation: dw-girl-sway 3.6s ease-in-out infinite;
+  transform-box: fill-box;
+  transform-origin: 50% 100%; /* pivot at her feet */
+}
+@media (prefers-reduced-motion: reduce) {
+  .dw-paddle, .dw-girl-sway { animation: none; }
+}

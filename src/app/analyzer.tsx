@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import type { AnalysisResult } from "@/lib/pipeline";
 import type { UserProfile } from "@/lib/reader";
-import PolicyScene from "./policy-scene";
+import PolicyScene, { MIN_LOADING_MS } from "./policy-scene";
 import { useMode } from "@/components/ModeContext";
 import { InputPanel } from "@/components/InputPanel";
 import { Card } from "@/components/ui/Card";
@@ -42,6 +42,7 @@ export default function Analyzer({ profile }: { profile: UserProfile }) {
     setLoading(true);
     setError(null);
     setResult(null);
+    const startedAt = Date.now();
     try {
       const res = await fetch("/api/analyze", {
         method: "POST",
@@ -50,6 +51,10 @@ export default function Analyzer({ profile }: { profile: UserProfile }) {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Request failed");
+      // Hold the loading state to a floor so the corner scene gets a full run
+      // even on an instant cache hit. Slow analyses are unaffected.
+      const remaining = MIN_LOADING_MS - (Date.now() - startedAt);
+      if (remaining > 0) await new Promise((r) => setTimeout(r, remaining));
       setResult(data as AnalysisResult);
       setMode(data.role === "lawmaker" ? "briefing" : "simple");
     } catch (e) {
@@ -85,11 +90,12 @@ export default function Analyzer({ profile }: { profile: UserProfile }) {
         </p>
       )}
 
+      {/* Corner scene: animates while the analysis loads, then sweeps between
+          the real measured before/after satellite values. */}
+      {(loading || result) && <PolicyScene readings={sceneReadings} loading={loading} />}
+
       {result && (
         <section className="space-y-6">
-          {/* Cute corner scene, driven by the measured before/after readings */}
-          {sceneReadings.length > 0 && <PolicyScene readings={sceneReadings} />}
-
           {/* What it means for YOU, where you live — the "downwind" read */}
           {local && (
             <div className="rounded-xl bg-neutral-900 p-4 text-neutral-100 dark:bg-neutral-100 dark:text-neutral-900">
