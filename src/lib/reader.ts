@@ -42,30 +42,39 @@ export type Personalization = {
 };
 
 // ── Satellite evidence (Receipts mode) ──────────────────────────────────────
-// A before/after image pair for an analogue region, showing what the situation
-// was (past), how it changed (present), grounding the future horizons. The
-// `interpretation` is produced by local Gemma vision during precompute; it's
-// null when only the deterministic image URLs are available (no VLM run yet).
-export type SatelliteEvidence = {
-  policyId: string;
-  region: string;
-  dimension: string;
-  layerLabel: string;
-  dataset: string;
+// Per climate dimension, a before/after image pair (what the situation was →
+// how it changed, grounding the future horizons) plus a REAL measured value
+// inverted from the GIBS colormap pixels — no GPU, no external raster service.
+
+// One dimension's reading for one analogue region.
+export type DimensionReading = {
+  key: string; // DimensionKey, e.g. "vegetation"
+  label: string; // "Vegetation & land cover"
+  dataset: string; // provenance for Receipts
   before: { date: string; url: string };
   after: { date: string; url: string };
+  // Physical measurement inverted from the colormap. null if the scene was
+  // blank/too gap-covered to measure (imagery still shown).
+  metric: {
+    unit: string; // "NDVI", "°C", "AOD", "DU", "molecules/cm²", "mm/hr", "% cover"
+    before: number;
+    after: number;
+    deltaPct: number;
+    coverage: number; // 0..1 fraction of pixels that mapped to the palette
+    goodDirection: "up" | "down" | "neutral"; // is an increase env-good?
+  } | null;
+  // Optional qualitative read from local Gemma vision (precompute only).
   interpretation: {
     observable: string;
     summary: string;
     direction: "improved" | "degraded" | "mixed" | "no_change";
     confidence: "high" | "medium" | "low";
   } | null;
-  model: string | null; // which VLM produced the interpretation
-  // A REAL number measured from the image pixels (no GPU/LLM): mean greenness
-  // (0..1) in each image and the signed % change. null if imagery unavailable.
-  greenness: {
-    before: number;
-    after: number;
-    deltaPct: number;
-  } | null;
+};
+
+export type SatelliteEvidence = {
+  policyId: string;
+  region: string;
+  model: string | null; // which VLM produced any interpretations
+  readings: DimensionReading[]; // one per climate dimension
 };

@@ -14,6 +14,21 @@ const LABEL_STYLE: Record<string, string> = {
 
 type Mode = "simple" | "briefing";
 
+// Compact number formatting for physical values spanning many magnitudes
+// (NDVI ~0.8 … NO₂ ~1e14). Keeps small values readable, exponents for large.
+function fmt(n: number): string {
+  const abs = Math.abs(n);
+  if (abs !== 0 && (abs >= 1e5 || abs < 1e-3)) return n.toExponential(1);
+  return String(n);
+}
+
+// Colour a measured delta by whether the change is environmentally good.
+function deltaColor(deltaPct: number, good: "up" | "down" | "neutral"): string {
+  if (good === "neutral" || deltaPct === 0) return "text-neutral-600 dark:text-neutral-300";
+  const improving = good === "up" ? deltaPct > 0 : deltaPct < 0;
+  return improving ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400";
+}
+
 export default function Analyzer({ profile }: { profile: UserProfile }) {
   const [policy, setPolicy] = useState("");
   const [loading, setLoading] = useState(false);
@@ -178,61 +193,57 @@ export default function Analyzer({ profile }: { profile: UserProfile }) {
                     </div>
                     <p className="mt-1 text-xs text-neutral-600 dark:text-neutral-400">{a.observedDelta}</p>
 
-                    {/* Receipts: the actual before/after satellite image pair */}
-                    {a.evidence && (
-                      <div className="mt-3 rounded-md bg-neutral-50 p-3 dark:bg-neutral-900/50">
-                        <div className="flex items-center justify-between text-[10px] uppercase tracking-wide text-neutral-500">
-                          <span>📡 {a.evidence.dimension}</span>
-                          <span>{a.evidence.dataset}</span>
-                        </div>
-                        <div className="mt-2 grid grid-cols-2 gap-2">
-                          {[a.evidence.before, a.evidence.after].map((img, i) => (
-                            <figure key={i}>
-                              {/* eslint-disable-next-line @next/next/no-img-element */}
-                              <img
-                                src={img.url}
-                                alt={`${i === 0 ? "Before" : "After"} — ${a.evidence!.layerLabel}`}
-                                loading="lazy"
-                                className="aspect-square w-full rounded border border-neutral-200 object-cover dark:border-neutral-700"
-                              />
-                              <figcaption className="mt-1 text-center text-[10px] text-neutral-500">
-                                {i === 0 ? "Before" : "After"} · {img.date}
-                              </figcaption>
-                            </figure>
-                          ))}
-                        </div>
-                        {/* Measured directly from the image pixels — a real number */}
-                        {a.evidence.greenness && (
-                          <p className="mt-2 flex items-baseline gap-2 text-xs">
-                            <span
-                              className={`font-semibold ${
-                                a.evidence.greenness.deltaPct < 0
-                                  ? "text-rose-600 dark:text-rose-400"
-                                  : "text-emerald-600 dark:text-emerald-400"
-                              }`}
-                            >
-                              {a.evidence.greenness.deltaPct > 0 ? "+" : ""}
-                              {a.evidence.greenness.deltaPct}% greenness
-                            </span>
-                            <span className="text-neutral-400">
-                              measured from NDVI pixels ({a.evidence.greenness.before} → {a.evidence.greenness.after})
-                            </span>
-                          </p>
-                        )}
-                        {a.evidence.interpretation ? (
-                          <p className="mt-1 text-xs text-neutral-600 dark:text-neutral-400">
-                            <span className="font-medium capitalize">{a.evidence.interpretation.direction.replace("_", " ")}</span>
-                            {" · "}
-                            {a.evidence.interpretation.summary}{" "}
-                            <span className="text-neutral-400">
-                              ({a.evidence.interpretation.confidence} confidence · read by {a.evidence.model})
-                            </span>
-                          </p>
-                        ) : (
-                          <p className="mt-1 text-[10px] text-neutral-400">
-                            {a.evidence.layerLabel} — image pair from NASA GIBS.
-                          </p>
-                        )}
+                    {/* Receipts: before/after image pairs + measured values across
+                        the full climate surface, one card per dimension. */}
+                    {a.evidence && a.evidence.readings.length > 0 && (
+                      <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                        {a.evidence.readings.map((r) => (
+                          <div key={r.key} className="rounded-md bg-neutral-50 p-3 dark:bg-neutral-900/50">
+                            <div className="flex items-center justify-between gap-2 text-[10px] uppercase tracking-wide text-neutral-500">
+                              <span>📡 {r.label}</span>
+                              <span className="shrink-0">{r.dataset}</span>
+                            </div>
+                            <div className="mt-2 grid grid-cols-2 gap-2">
+                              {[r.before, r.after].map((img, i) => (
+                                <figure key={i}>
+                                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                                  <img
+                                    src={img.url}
+                                    alt={`${i === 0 ? "Before" : "After"} — ${r.label}`}
+                                    loading="lazy"
+                                    className="aspect-square w-full rounded border border-neutral-200 object-cover dark:border-neutral-700"
+                                  />
+                                  <figcaption className="mt-1 text-center text-[10px] text-neutral-500">
+                                    {i === 0 ? "Before" : "After"} · {img.date}
+                                  </figcaption>
+                                </figure>
+                              ))}
+                            </div>
+                            {/* Real physical value inverted from the GIBS colormap */}
+                            {r.metric ? (
+                              <p className="mt-2 flex flex-wrap items-baseline gap-x-2 text-xs">
+                                <span className={`font-semibold ${deltaColor(r.metric.deltaPct, r.metric.goodDirection)}`}>
+                                  {r.metric.deltaPct > 0 ? "+" : ""}
+                                  {r.metric.deltaPct}%
+                                </span>
+                                <span className="text-neutral-500">
+                                  {fmt(r.metric.before)} → {fmt(r.metric.after)} {r.metric.unit}
+                                </span>
+                                <span className="text-neutral-400">
+                                  measured{r.metric.coverage < 0.95 ? ` · ${Math.round(r.metric.coverage * 100)}% coverage` : ""}
+                                </span>
+                              </p>
+                            ) : (
+                              <p className="mt-2 text-[10px] text-neutral-400">Imagery only (scene too gap-covered to measure).</p>
+                            )}
+                            {r.interpretation && (
+                              <p className="mt-1 text-[11px] text-neutral-600 dark:text-neutral-400">
+                                {r.interpretation.summary}{" "}
+                                <span className="text-neutral-400">({r.interpretation.confidence} · {a.evidence!.model})</span>
+                              </p>
+                            )}
+                          </div>
+                        ))}
                       </div>
                     )}
                   </li>

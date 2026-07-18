@@ -1,14 +1,9 @@
 import zlib from "node:zlib";
 
-// Compute a REAL, measured vegetation index directly from GIBS NDVI-layer pixels
-// — no GPU, no external service, pure Node. The MODIS NDVI 16-day layer is a
-// colorized ramp (tan/brown = low NDVI, dark green = high NDVI), so per pixel
-// (green − red) tracks NDVI. Averaging it over the valid land pixels gives a
-// mean-greenness index; the before→after delta is an observed change in
-// vegetation. It is a proxy for average NDVI (read off the colormap), not the
-// raw NDVI value — labelled honestly as such in the UI.
+// Minimal PNG decoder for the 8-bit RGBA, non-interlaced PNGs NASA GIBS returns.
+// Pure Node (zlib inflate + PNG unfiltering) — no native deps, no GPU.
 
-type DecodedPng = { width: number; height: number; rgba: Buffer };
+export type DecodedPng = { width: number; height: number; rgba: Buffer };
 
 function paeth(a: number, b: number, c: number): number {
   const p = a + b - c;
@@ -19,8 +14,7 @@ function paeth(a: number, b: number, c: number): number {
   return pb <= pc ? b : c;
 }
 
-// Minimal PNG decoder for the 8-bit RGBA, non-interlaced PNGs GIBS returns.
-function decodePng(buf: Buffer): DecodedPng {
+export function decodePng(buf: Buffer): DecodedPng {
   if (buf.readUInt32BE(0) !== 0x89504e47) throw new Error("not a PNG");
   let pos = 8;
   let width = 0;
@@ -82,41 +76,4 @@ function decodePng(buf: Buffer): DecodedPng {
   }
 
   return { width, height, rgba };
-}
-
-// Mean greenness (0..1) over valid land pixels. Skips transparent no-data and
-// near-white pixels (rivers, clouds, masked areas) so they don't dilute the read.
-export function meanGreenness(pngBuf: Buffer): number {
-  const { rgba } = decodePng(pngBuf);
-  let sum = 0;
-  let n = 0;
-  for (let i = 0; i < rgba.length; i += 4) {
-    const r = rgba[i];
-    const g = rgba[i + 1];
-    const b = rgba[i + 2];
-    const alpha = rgba[i + 3];
-    if (alpha < 128) continue; // transparent / no data
-    if (r > 220 && g > 220 && b > 220) continue; // white: water / cloud / mask
-    sum += Math.max(0, (g - r) / (g + r + 1)); // NDVI-colormap proxy
-    n++;
-  }
-  return n ? sum / n : 0;
-}
-
-export type GreennessDelta = {
-  before: number; // mean greenness index (0..1) in the before image
-  after: number; // …in the after image
-  deltaPct: number; // signed % change, after vs before
-};
-
-// Measured vegetation change between a before/after PNG pair.
-export function greennessDelta(beforePng: Buffer, afterPng: Buffer): GreennessDelta {
-  const before = meanGreenness(beforePng);
-  const after = meanGreenness(afterPng);
-  const deltaPct = before > 0 ? ((after - before) / before) * 100 : 0;
-  return {
-    before: Math.round(before * 1000) / 1000,
-    after: Math.round(after * 1000) / 1000,
-    deltaPct: Math.round(deltaPct * 10) / 10,
-  };
 }
