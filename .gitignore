@@ -20,6 +20,20 @@
 # production
 /build
 
+CLAUDE.local.md
+
+# Agent sidecar artifacts (managed by flow/agents-bootstrap.sh)
+/.agents
+/AGENT.md
+/AGENTS.md
+/CLAUDE.md
+/.github/copilot-instructions.md
+# .claude/ deployed content (rules, commands, CLAUDE.md come from sidecar)
+/.claude/CLAUDE.md
+/.claude/rules/
+/.claude/commands/
+/.claude/settings.local.json
+
 # misc
 .DS_Store
 *.pem
