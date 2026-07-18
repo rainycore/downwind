@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
 import { getDb, COLLECTIONS } from "./mongodb";
+import caseStudies from "../../data/case-studies.json";
 import { gemini, embed, usageOf, MODELS } from "./gemini";
 import {
   POLICY_EXTRACTION_SCHEMA,
@@ -18,6 +19,7 @@ export type Analogue = {
   enactedYear: number;
   score: number;
   observedDelta: string; // human summary of the satellite-observed change
+  loc?: { type: "Point"; coordinates: [number, number] }; // GeoJSON — drives the precedent map
 };
 
 export type AnalysisResult = {
@@ -42,6 +44,69 @@ function hashPolicy(text: string): string {
   return createHash("sha256").update(text.trim().toLowerCase()).digest("hex").slice(0, 16);
 }
 
+// ── Atlas vs. local-fallback selection ──
+// When MONGODB_URI is a real connection string we use Atlas $vectorSearch and
+// the result cache. Otherwise (local dev without a cluster) we run a real
+// in-process vector search over the seeded case studies using live Gemini
+// embeddings, and skip the cache. The Gemini pipeline is identical either way.
+function mongoConfigured(): boolean {
+  const uri = process.env.MONGODB_URI ?? "";
+  return uri.startsWith("mongodb://") || uri.startsWith("mongodb+srv://");
+}
+
+type CaseStudy = {
+  policyId: string;
+  title: string;
+  region: string;
+  enactedYear: number;
+  loc?: { type: "Point"; coordinates: [number, number] };
+  text: string;
+  observedDelta: string;
+};
+
+function cosine(a: number[], b: number[]): number {
+  let dot = 0;
+  let na = 0;
+  let nb = 0;
+  for (let i = 0; i < a.length; i++) {
+    dot += a[i] * b[i];
+    na += a[i] * a[i];
+    nb += b[i] * b[i];
+  }
+  return dot / (Math.sqrt(na) * Math.sqrt(nb) || 1);
+}
+
+// Embed the seeded corpus once per process (mirrors seed.ts: `title\ntext`).
+let _localCorpus: { doc: CaseStudy; vector: number[] }[] | null = null;
+async function localCorpus(usages: Usage[]): Promise<{ doc: CaseStudy; vector: number[] }[]> {
+  if (_localCorpus) return _localCorpus;
+  const docs = caseStudies as unknown as CaseStudy[];
+  const out: { doc: CaseStudy; vector: number[] }[] = [];
+  for (const d of docs) {
+    const vector = await embed(`${d.title}\n${d.text}`);
+    usages.push({ model: MODELS.embed, promptTokens: Math.ceil((d.title.length + d.text.length) / 4), outputTokens: 0 });
+    out.push({ doc: d, vector });
+  }
+  _localCorpus = out;
+  return out;
+}
+
+async function localAnalogues(queryVector: number[], usages: Usage[]): Promise<Analogue[]> {
+  const corpus = await localCorpus(usages);
+  return corpus
+    .map(({ doc, vector }) => ({
+      policyId: doc.policyId,
+      title: doc.title,
+      region: doc.region,
+      enactedYear: doc.enactedYear,
+      observedDelta: doc.observedDelta,
+      loc: doc.loc,
+      score: cosine(queryVector, vector),
+    }))
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 5);
+}
+
 // ── Step 1: screen + extract mechanisms (cheap model, structured output) ──
 async function extractMechanisms(policyText: string, usages: Usage[]): Promise<PolicyExtraction> {
   const resp = await gemini().models.generateContent({
@@ -55,37 +120,52 @@ async function extractMechanisms(policyText: string, usages: Usage[]): Promise<P
 
 // ── Step 2: vector search for analogous enacted policies (MongoDB Atlas) ──
 async function findAnalogues(extraction: PolicyExtraction, usages: Usage[]): Promise<Analogue[]> {
-  const db = await getDb();
   const queryVector = await embed(extraction.searchQuery);
   usages.push({ model: MODELS.embed, promptTokens: Math.ceil(extraction.searchQuery.length / 4), outputTokens: 0 });
 
-  const docs = await db
-    .collection(COLLECTIONS.policies)
-    .aggregate([
-      {
-        $vectorSearch: {
-          index: "policy_vector_index",
-          path: "embedding",
-          queryVector,
-          numCandidates: 100,
-          limit: 5,
-        },
-      },
-      {
-        $project: {
-          _id: 0,
-          policyId: "$policyId",
-          title: 1,
-          region: 1,
-          enactedYear: 1,
-          observedDelta: 1,
-          score: { $meta: "vectorSearchScore" },
-        },
-      },
-    ])
-    .toArray();
+  // Local dev without Atlas: cosine search over the seeded corpus.
+  if (!mongoConfigured()) {
+    return localAnalogues(queryVector, usages);
+  }
 
-  return docs as Analogue[];
+  // Atlas is configured — use $vectorSearch, but degrade gracefully to the
+  // local corpus if the cluster is unreachable or the index isn't ready yet
+  // (unseeded collection, index still building, venue network blip).
+  try {
+    const db = await getDb();
+    const docs = await db
+      .collection(COLLECTIONS.policies)
+      .aggregate([
+        {
+          $vectorSearch: {
+            index: "policy_vector_index",
+            path: "embedding",
+            queryVector,
+            numCandidates: 100,
+            limit: 5,
+          },
+        },
+        {
+          $project: {
+            _id: 0,
+            policyId: "$policyId",
+            title: 1,
+            region: 1,
+            enactedYear: 1,
+            observedDelta: 1,
+            loc: 1,
+            score: { $meta: "vectorSearchScore" },
+          },
+        },
+      ])
+      .toArray();
+
+    if (docs.length > 0) return docs as Analogue[];
+    console.warn("Atlas vector search returned 0 docs — falling back to local corpus.");
+  } catch (err) {
+    console.warn("Atlas vector search unavailable — falling back to local corpus:", (err as Error).message);
+  }
+  return localAnalogues(queryVector, usages);
 }
 
 // ── Step 3: synthesize the impact surface + dual output ──
@@ -140,11 +220,20 @@ function agreementOf(runs: SynthesisOutput[]): number {
 // ── Orchestrator: cache-first, then run the full pipeline ──
 export async function analyzePolicy(policyText: string): Promise<AnalysisResult> {
   const inputHash = hashPolicy(policyText);
-  const db = await getDb();
+  let useMongo = mongoConfigured();
 
-  const cached = await db.collection<AnalysisResult>(COLLECTIONS.analyses).findOne({ inputHash });
-  if (cached) {
-    return { ...cached, receipt: cachedReceipt(cached.receipt) };
+  // Cache-first, but only when a real cluster is reachable.
+  if (useMongo) {
+    try {
+      const db = await getDb();
+      const cached = await db.collection<AnalysisResult>(COLLECTIONS.analyses).findOne({ inputHash });
+      if (cached) {
+        return { ...cached, receipt: cachedReceipt(cached.receipt) };
+      }
+    } catch (err) {
+      console.warn("Atlas cache unavailable — proceeding without cache:", (err as Error).message);
+      useMongo = false; // don't attempt the write later either
+    }
   }
 
   const usages: Usage[] = [];
@@ -172,6 +261,13 @@ export async function analyzePolicy(policyText: string): Promise<AnalysisResult>
     createdAt: new Date().toISOString(),
   };
 
-  await db.collection(COLLECTIONS.analyses).insertOne({ ...result });
+  if (useMongo) {
+    try {
+      const db = await getDb();
+      await db.collection(COLLECTIONS.analyses).insertOne({ ...result });
+    } catch (err) {
+      console.warn("Atlas cache write failed — result still returned:", (err as Error).message);
+    }
+  }
   return result;
 }

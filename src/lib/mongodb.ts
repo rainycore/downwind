@@ -16,12 +16,25 @@ function connect(): Promise<MongoClient> {
 
 // Lazy: don't touch env or open a socket until the first query. This keeps
 // `next build` page-data collection from evaluating a connection at import.
+// Don't cache a *rejected* connection promise: if the first connect fails
+// (e.g. IP not yet allowlisted), clear the cache so the next call retries
+// instead of replaying the failure until the process restarts.
+function memo(existing: Promise<MongoClient> | undefined, set: (p: Promise<MongoClient> | undefined) => void): Promise<MongoClient> {
+  if (existing) return existing;
+  const p = connect().catch((err) => {
+    set(undefined);
+    throw err;
+  });
+  set(p);
+  return p;
+}
+
 let _prod: Promise<MongoClient> | undefined;
 function clientPromise(): Promise<MongoClient> {
   if (process.env.NODE_ENV === "development") {
-    return (global._downwindMongo ??= connect());
+    return memo(global._downwindMongo, (p) => (global._downwindMongo = p));
   }
-  return (_prod ??= connect());
+  return memo(_prod, (p) => (_prod = p));
 }
 
 export async function getDb(): Promise<Db> {

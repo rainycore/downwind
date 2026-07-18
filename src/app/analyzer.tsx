@@ -3,8 +3,8 @@
 import { useState } from "react";
 import type { AnalysisResult } from "@/lib/pipeline";
 import { IMPACT_DIMENSIONS } from "@/lib/schemas";
-
-const SAMPLE = `Ontario reduces conservation-authority funding and forest-management program spending by 30%, with no explicit climate provisions, framed purely as a budget-balancing measure.`;
+import { useMode } from "@/components/ModeContext";
+import { InputPanel } from "@/components/InputPanel";
 
 const CONF_STYLE: Record<string, string> = {
   observed: "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300",
@@ -26,7 +26,7 @@ export default function Analyzer() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<AnalysisResult | null>(null);
-  const [mode, setMode] = useState<"simple" | "briefing">("simple");
+  const { mode } = useMode();
 
   async function run() {
     setLoading(true);
@@ -50,26 +50,7 @@ export default function Analyzer() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <textarea
-          className="h-32 w-full rounded-lg border border-neutral-300 bg-transparent p-3 text-sm dark:border-neutral-700"
-          placeholder="Paste any bill — transport, housing, agriculture, trade, defense…"
-          value={policy}
-          onChange={(e) => setPolicy(e.target.value)}
-        />
-        <div className="mt-2 flex items-center gap-3">
-          <button
-            className="rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
-            onClick={run}
-            disabled={loading || policy.trim().length < 20}
-          >
-            {loading ? "Analyzing…" : "Retrieve precedent"}
-          </button>
-          <button className="text-sm text-neutral-500 underline" onClick={() => setPolicy(SAMPLE)} type="button">
-            Use sample policy
-          </button>
-        </div>
-      </div>
+      <InputPanel value={policy} onChange={setPolicy} onRun={run} loading={loading} />
 
       {error && (
         <p className="rounded-md bg-rose-100 p-3 text-sm text-rose-800 dark:bg-rose-900/40 dark:text-rose-300">
@@ -108,21 +89,11 @@ export default function Analyzer() {
             )}
           </div>
 
-          {/* Briefing / Simple dual output */}
+          {/* Briefing / Simple dual output — governed by the global header toggle */}
           <div className="rounded-lg border border-neutral-200 p-4 dark:border-neutral-800">
-            <div className="mb-3 inline-flex rounded-md border border-neutral-300 p-0.5 text-xs dark:border-neutral-700">
-              {(["simple", "briefing"] as const).map((m) => (
-                <button
-                  key={m}
-                  onClick={() => setMode(m)}
-                  className={`rounded px-2.5 py-1 font-medium capitalize ${
-                    mode === m ? "bg-neutral-900 text-white dark:bg-neutral-100 dark:text-neutral-900" : "text-neutral-500"
-                  }`}
-                >
-                  {m}
-                </button>
-              ))}
-            </div>
+            <p className="mb-2 text-xs font-medium uppercase tracking-wide text-neutral-400">
+              {mode === "simple" ? "Simple" : "Briefing"}
+            </p>
             <p className="text-sm leading-relaxed whitespace-pre-line">
               {mode === "simple" ? result.simple : result.briefing}
             </p>
