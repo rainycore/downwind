@@ -3,6 +3,7 @@
 import { useState } from "react";
 import type { AnalysisResult } from "@/lib/pipeline";
 import type { UserProfile } from "@/lib/reader";
+import PolicyScene from "./policy-scene";
 
 const SAMPLE = `Ontario reduces conservation-authority funding and forest-management program spending by 30%, with no explicit climate provisions, framed purely as a budget-balancing measure.`;
 
@@ -60,6 +61,13 @@ export default function Analyzer({ profile }: { profile: UserProfile }) {
 
   const local = result?.personalization.local;
 
+  // Drive the corner scene from whichever precedent has the most measured
+  // dimensions, so the cartoon reflects real before/after satellite values.
+  const sceneReadings =
+    result?.analogues
+      .map((a) => a.evidence?.readings ?? [])
+      .sort((x, y) => y.filter((r) => r.metric).length - x.filter((r) => r.metric).length)[0] ?? [];
+
   return (
     <div className="space-y-6">
       <p className="text-xs text-neutral-500">
@@ -102,6 +110,9 @@ export default function Analyzer({ profile }: { profile: UserProfile }) {
 
       {result && (
         <section className="space-y-6">
+          {/* Cute corner scene, driven by the measured before/after readings */}
+          {sceneReadings.length > 0 && <PolicyScene readings={sceneReadings} />}
+
           {/* What it means for YOU, where you live — the "downwind" read */}
           {local && (
             <div className="rounded-lg bg-neutral-900 p-4 text-neutral-100 dark:bg-neutral-100 dark:text-neutral-900">
