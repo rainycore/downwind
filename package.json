@@ -8,13 +8,16 @@
     "start": "next start",
     "lint": "eslint",
     "seed": "node --env-file=.env.local --import tsx scripts/seed.ts",
-    "evidence": "node --env-file=.env.local --import tsx scripts/evidence.ts"
+    "evidence": "node --env-file=.env.local --import tsx scripts/evidence.ts",
+    "index": "node --env-file=.env.local --import tsx scripts/create-vector-index.ts",
+    "test:llm": "node --env-file=.env.local --import tsx scripts/test-llm.ts",
+    "test:pipeline": "node --env-file=.env.local --import tsx scripts/test-pipeline.ts"
   },
   "dependencies": {
     "@auth0/nextjs-auth0": "^4.25.0",
     "@google/genai": "^2.12.0",
     "mongodb": "^7.5.0",
-    "next": "16.2.10",
+    "next": "^16.2.10",
     "react": "19.2.4",
     "react-dom": "19.2.4"
   },

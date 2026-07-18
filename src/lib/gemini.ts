@@ -8,7 +8,10 @@ const apiKey = process.env.GEMINI_API_KEY;
 
 export const MODELS = {
   extract: process.env.GEMINI_MODEL_EXTRACT ?? "gemini-flash-latest",
-  synth: process.env.GEMINI_MODEL_SYNTH ?? "gemini-2.5-pro",
+  // Vision + synthesis. The plan specifies FLASH for the vision pass
+  // (~$0.0006/pair); gemini-2.5-pro is unavailable on the free tier (limit: 0),
+  // so default to flash and let a paid tier opt into pro via env.
+  synth: process.env.GEMINI_MODEL_SYNTH ?? "gemini-flash-latest",
   fallback: process.env.GEMINI_MODEL_FALLBACK ?? "gemma-3-27b-it",
   embed: "gemini-embedding-001",
 } as const;

@@ -23,19 +23,24 @@ async function main() {
   if (!apiKey) throw new Error("GEMINI_API_KEY is not set.");
 
   const here = path.dirname(fileURLToPath(import.meta.url));
-  const raw = await readFile(path.join(here, "..", "data", "case-studies.json"), "utf8");
-  const cases: Array<{ policyId: string; text: string; [k: string]: unknown }> = JSON.parse(raw);
+  // The enriched analog index is the spine (plan.md L201-215): each case carries
+  // bbox + observable window + documented outcome + citation + precomputed
+  // counterfactual, all of which ride along into Mongo via `...c` below.
+  const raw = await readFile(path.join(here, "..", "data", "hero-cases.json"), "utf8");
+  const cases: Array<{ policyId: string; title: string; text: string; [k: string]: unknown }> = JSON.parse(raw);
 
   const ai = new GoogleGenAI({ apiKey });
   const client = new MongoClient(uri);
   await client.connect();
   const col = client.db(dbName).collection("policies");
 
-  console.log(`Embedding + upserting ${cases.length} policies...`);
+  console.log(`Embedding + upserting ${cases.length} hero cases...`);
   for (const c of cases) {
+    // Embed the policy's mechanisms (title + text) only — NOT its documented
+    // outcome — so retrieval matches on the causal lever, not the result.
     const resp = await ai.models.embedContent({
       model: EMBED_MODEL,
-      contents: `${c.title as string}\n${c.text}`,
+      contents: `${c.title}\n${c.text}`,
       config: { outputDimensionality: EMBED_DIM },
     });
     const embedding = resp.embeddings?.[0]?.values;

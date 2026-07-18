@@ -4,7 +4,11 @@ import { analyzePolicy } from "@/lib/pipeline";
 import { getProfile } from "@/lib/profile";
 
 export const runtime = "nodejs";
-export const maxDuration = 60;
+// The uncached pipeline makes ~6 sequential Gemini calls (extract, re-rank,
+// vision, horizons, personalize) + a sidecar EO round-trip. On the free tier
+// (flash) that can take 2-3 min the first time; cached hero-case runs are
+// instant. Give the first-touch path room so it doesn't hard-fail.
+export const maxDuration = 300;
 
 export async function POST(request: Request) {
   // Auth0-gated: only signed-in users can run (and thus cost) an analysis.
