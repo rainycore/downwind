@@ -76,3 +76,50 @@ export type Horizon = {
   label: "observed" | "extrapolated" | "speculative";
   assessment: string;
 };
+
+// ── Reader profile ──────────────────────────────────────────────────────────
+// Collected once, right after Auth0 login (see /onboarding). Drives who the
+// analysis is written for:
+//   - role      → which output mode leads (lawmaker → briefing, citizen → simple)
+//   - education → reading level within each mode
+//   - location  → the whole point of "Downwind": a policy enacted anywhere can
+//                 reach YOU on the wind/water/trade, so we ground impact where
+//                 the reader actually lives (Toronto smoke drifting into NYC).
+export const READER_ROLES = ["lawmaker", "citizen"] as const;
+export type ReaderRole = (typeof READER_ROLES)[number];
+
+export const EDUCATION_LEVELS = ["elementary", "high_school", "undergraduate", "graduate"] as const;
+export type EducationLevel = (typeof EDUCATION_LEVELS)[number];
+
+export type UserProfile = {
+  sub: string; // Auth0 user id — the profile key
+  role: ReaderRole;
+  location: string; // free-text, e.g. "New York City, USA"
+  education: EducationLevel;
+  createdAt: string;
+  updatedAt: string;
+};
+
+// Human labels for the education levels, reused by the form and the prompt.
+export const EDUCATION_LABELS: Record<EducationLevel, string> = {
+  elementary: "Explain it like I'm five",
+  high_school: "High-school level",
+  undergraduate: "College level",
+  graduate: "Expert / technical",
+};
+
+// ── Personalized, location-aware output ─────────────────────────────────────
+// Both modes are generated from the same analysis JSON in one pass, then the UI
+// shows the one matching the reader's role (with a toggle to the other).
+export type LocalImpact = {
+  location: string;
+  headline: string; // the visceral local number, e.g. "≈ +6 smoke days/year in NYC within 3 years"
+  pathway: string; // HOW a policy enacted elsewhere reaches this location (wind, water, trade…)
+  reachesReader: boolean; // false when the reader is genuinely out of the impact's reach
+};
+
+export type Personalization = {
+  simple: string; // TL;DR a five-year-old could follow
+  briefing: string; // mechanisms, confidence, citations — for lawmakers / technical readers
+  local: LocalImpact;
+};

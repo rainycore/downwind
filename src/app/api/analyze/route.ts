@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth0 } from "@/lib/auth0";
 import { analyzePolicy } from "@/lib/pipeline";
+import { getProfile } from "@/lib/profile";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -24,8 +25,14 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Policy text is too short." }, { status: 400 });
   }
 
+  // Analyses are tailored to the reader; require an onboarded profile.
+  const profile = await getProfile(session.user.sub);
+  if (!profile) {
+    return NextResponse.json({ error: "Complete your profile before running an analysis.", needsProfile: true }, { status: 428 });
+  }
+
   try {
-    const result = await analyzePolicy(policy);
+    const result = await analyzePolicy(policy, profile);
     return NextResponse.json(result);
   } catch (err) {
     console.error("analyze failed:", err);

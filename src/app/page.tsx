@@ -1,9 +1,12 @@
 import { auth0 } from "@/lib/auth0";
+import { getProfile } from "@/lib/profile";
 import Analyzer from "./analyzer";
+import Onboarding from "./onboarding";
 
 export default async function Home() {
   const session = await auth0.getSession();
   const user = session?.user;
+  const profile = user ? await getProfile(user.sub) : null;
 
   return (
     <main className="mx-auto w-full max-w-3xl px-6 py-12">
@@ -41,7 +44,11 @@ export default async function Home() {
       </header>
 
       {user ? (
-        <Analyzer />
+        profile ? (
+          <Analyzer profile={profile} />
+        ) : (
+          <Onboarding />
+        )
       ) : (
         <div className="rounded-lg border border-neutral-200 p-8 text-center dark:border-neutral-800">
           <p className="text-neutral-600 dark:text-neutral-400">

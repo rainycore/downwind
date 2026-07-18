@@ -35,8 +35,12 @@ export async function getDb(): Promise<Db> {
 export const COLLECTIONS = {
   /** Enacted climate/economic policies with embeddings + region metadata. */
   policies: "policies",
-  /** Cached analysis results, keyed by a hash of the input policy text. */
+  /** Cached, profile-independent analysis cores, keyed by input-policy hash. */
   analyses: "analyses",
   /** Precomputed satellite indices (NDVI/NBR/AOD deltas) per region + window. */
   observations: "observations",
+  /** Reader profiles (role / location / education), keyed by Auth0 `sub`. */
+  profiles: "profiles",
+  /** Cached personalized output, keyed by `${inputHash}:${profileHash}`. */
+  personalizations: "personalizations",
 } as const;

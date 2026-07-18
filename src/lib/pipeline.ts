@@ -2,7 +2,15 @@ import { createHash } from "node:crypto";
 import { Type } from "@google/genai";
 import { getDb, COLLECTIONS } from "./mongodb";
 import { gemini, embed, usageOf, MODELS, EMBED_DIM } from "./gemini";
-import { POLICY_EXTRACTION_SCHEMA, type PolicyExtraction, type Horizon } from "./schemas";
+import {
+  POLICY_EXTRACTION_SCHEMA,
+  EDUCATION_LABELS,
+  type PolicyExtraction,
+  type Horizon,
+  type Personalization,
+  type UserProfile,
+} from "./schemas";
+import { profileHash } from "./profile";
 import { receiptFrom, cachedReceipt, type Usage, type CarbonReceipt } from "./greenai";
 
 export type Analogue = {
@@ -14,14 +22,23 @@ export type Analogue = {
   observedDelta: string; // human summary of the satellite-observed change
 };
 
-export type AnalysisResult = {
+// Profile-independent core of an analysis. Cached by input-policy hash so the
+// expensive extraction/retrieval/synthesis is paid once and reused for every
+// reader — the Green-AI story.
+export type AnalysisCore = {
   inputHash: string;
   extraction: PolicyExtraction;
   analogues: Analogue[];
   horizons: Horizon[];
-  localTranslation: string; // e.g. "≈ +6 smoke days/year in Toronto"
   receipt: CarbonReceipt;
   createdAt: string;
+};
+
+// What the API returns: the core, tailored to one reader, plus a receipt that
+// reflects only the work that actually ran for THIS request.
+export type AnalysisResult = AnalysisCore & {
+  personalization: Personalization;
+  role: UserProfile["role"]; // lets the client pick which mode leads
 };
 
 function hashPolicy(text: string): string {
@@ -94,19 +111,15 @@ const HORIZON_SCHEMA = {
         required: ["years", "label", "assessment"],
       },
     },
-    localTranslation: {
-      type: Type.STRING,
-      description: "Translate the projected change into a visceral local metric, e.g. smoke days/year in Toronto.",
-    },
   },
-  required: ["horizons", "localTranslation"],
+  required: ["horizons"],
 } as const;
 
 async function synthesize(
   extraction: PolicyExtraction,
   analogues: Analogue[],
   usages: Usage[],
-): Promise<{ horizons: Horizon[]; localTranslation: string }> {
+): Promise<Horizon[]> {
   const model = MODELS.synth;
   const prompt = `You are grounding a policy-impact assessment in OBSERVED satellite precedent, not forecasting from scratch.
 
@@ -120,7 +133,6 @@ Produce three horizons with honest epistemic labels:
 - 3 years -> "observed": grounded directly in the analogues' measured deltas.
 - 10 years -> "extrapolated": trend extrapolation from the analogues.
 - 30 years -> "speculative": scenario narrative, explicitly uncertain.
-Then translate the near-term impact into a local metric (smoke days/year in Toronto).
 Never invent precise numbers you cannot ground; prefer ranges and state uncertainty.`;
 
   const resp = await gemini().models.generateContent({
@@ -129,38 +141,144 @@ Never invent precise numbers you cannot ground; prefer ranges and state uncertai
     config: { responseMimeType: "application/json", responseSchema: HORIZON_SCHEMA },
   });
   usages.push(usageOf(model, resp));
-  const parsed = JSON.parse(resp.text ?? "{}") as { horizons: Horizon[]; localTranslation: string };
-  return { horizons: parsed.horizons ?? [], localTranslation: parsed.localTranslation ?? "" };
+  const parsed = JSON.parse(resp.text ?? "{}") as { horizons?: Horizon[] };
+  return parsed.horizons ?? [];
 }
 
-// ── Orchestrator: cache-first, then run the full pipeline ──
-export async function analyzePolicy(policyText: string): Promise<AnalysisResult> {
+// ── Step 4: personalize for one reader (location-aware, dual output) ──
+// This is the "Downwind" thesis: a policy enacted anywhere can reach the reader
+// on the wind, water, or trade. We ground impact where they actually live and
+// render both a lawmaker briefing and a plain-language TL;DR in a single pass.
+const PERSONALIZE_SCHEMA = {
+  type: Type.OBJECT,
+  properties: {
+    simple: {
+      type: Type.STRING,
+      description: "Plain-language TL;DR written at the reader's reading level. No jargon.",
+    },
+    briefing: {
+      type: Type.STRING,
+      description: "Technical briefing: mechanisms, confidence, and which analogue/dataset grounds each claim.",
+    },
+    local: {
+      type: Type.OBJECT,
+      properties: {
+        location: { type: Type.STRING },
+        headline: {
+          type: Type.STRING,
+          description: "One visceral local number for THIS location, e.g. '≈ +6 smoke days/year in NYC within 3 years'.",
+        },
+        pathway: {
+          type: Type.STRING,
+          description: "How the distant policy reaches this location: prevailing winds, watershed, trade, migration, markets.",
+        },
+        reachesReader: {
+          type: Type.BOOLEAN,
+          description: "False only if the reader's location is genuinely outside any plausible reach of this policy's effects.",
+        },
+      },
+      required: ["location", "headline", "pathway", "reachesReader"],
+    },
+  },
+  required: ["simple", "briefing", "local"],
+} as const;
+
+async function personalizeFor(
+  core: AnalysisCore,
+  profile: Pick<UserProfile, "role" | "location" | "education">,
+  usages: Usage[],
+): Promise<Personalization> {
+  const model = MODELS.synth;
+  const prompt = `Turn this grounded policy analysis into output tailored to one specific reader.
+
+ANALYSIS (already grounded in observed satellite precedent):
+${JSON.stringify({ extraction: core.extraction, analogues: core.analogues, horizons: core.horizons }, null, 2)}
+
+READER:
+- Role: ${profile.role} (${profile.role === "lawmaker" ? "lead with mechanisms, confidence, citations" : "lead with what it means for daily life"})
+- Reading level: ${EDUCATION_LABELS[profile.education]}
+- Location: ${profile.location}
+
+Core idea — "Downwind": a policy enacted ANYWHERE can reach this reader through the
+atmosphere, watersheds, trade, or migration. Toronto's wildfire smoke drifted into
+New York City. Do NOT assume the reader is unaffected just because the policy is
+elsewhere. Reason explicitly about the physical/economic pathway from the affected
+regions to ${profile.location}, and only set reachesReader=false if there is
+genuinely no plausible pathway.
+
+Produce, from this same analysis in one pass:
+1. "simple": a TL;DR at the reader's reading level ("${EDUCATION_LABELS[profile.education]}").
+2. "briefing": a technical briefing with mechanisms, confidence, and which analogue/dataset grounds each claim.
+3. "local": the impact grounded in ${profile.location} — a visceral headline number, the downwind pathway, and whether it reaches the reader.
+Never invent precise numbers you cannot ground in the analogues; prefer ranges and state uncertainty.`;
+
+  const resp = await gemini().models.generateContent({
+    model,
+    contents: prompt,
+    config: { responseMimeType: "application/json", responseSchema: PERSONALIZE_SCHEMA },
+  });
+  usages.push(usageOf(model, resp));
+  return JSON.parse(resp.text ?? "{}") as Personalization;
+}
+
+// ── Core orchestrator: cache-first profile-independent analysis ──
+async function analyzeCore(policyText: string, usages: Usage[]): Promise<AnalysisCore> {
   const inputHash = hashPolicy(policyText);
   const db = await getDb();
 
-  // Cache hit → near-zero marginal cost, report it in the receipt.
-  const cached = await db.collection<AnalysisResult>(COLLECTIONS.analyses).findOne({ inputHash });
-  if (cached) {
-    return { ...cached, receipt: cachedReceipt(cached.receipt) };
-  }
+  const cached = await db.collection<AnalysisCore>(COLLECTIONS.analyses).findOne(
+    { inputHash },
+    { projection: { _id: 0 } },
+  );
+  if (cached) return cached; // no marginal cost — reflected in the receipt below
 
-  const usages: Usage[] = [];
   const extraction = await extractMechanisms(policyText, usages);
   const analogues = await findAnalogues(extraction, usages);
-  const { horizons, localTranslation } = await synthesize(extraction, analogues, usages);
+  const horizons = await synthesize(extraction, analogues, usages);
 
-  const result: AnalysisResult = {
+  const core: AnalysisCore = {
     inputHash,
     extraction,
     analogues,
     horizons,
-    localTranslation,
-    receipt: receiptFrom(usages),
+    receipt: receiptFrom(usages), // cost of building the core, stored for provenance
     createdAt: new Date().toISOString(),
   };
+  await db.collection(COLLECTIONS.analyses).insertOne({ ...core });
+  return core;
+}
 
-  await db.collection(COLLECTIONS.analyses).insertOne({ ...result });
-  return result;
+// ── Public entry point: analyze a policy for a specific reader ──
+export async function analyzePolicy(
+  policyText: string,
+  profile: Pick<UserProfile, "role" | "location" | "education">,
+): Promise<AnalysisResult> {
+  const usages: Usage[] = []; // only work that actually RUNS this request lands here
+  const db = await getDb();
+
+  const core = await analyzeCore(policyText, usages);
+
+  // Personalization cache key mixes the policy with the tailoring inputs, so
+  // two readers in different places never see each other's tailored text.
+  const persoKey = `${core.inputHash}:${profileHash(profile)}`;
+  const cachedPerso = await db
+    .collection<{ key: string; personalization: Personalization }>(COLLECTIONS.personalizations)
+    .findOne({ key: persoKey }, { projection: { _id: 0 } });
+
+  let personalization: Personalization;
+  if (cachedPerso) {
+    personalization = cachedPerso.personalization;
+  } else {
+    personalization = await personalizeFor(core, profile, usages);
+    await db
+      .collection(COLLECTIONS.personalizations)
+      .insertOne({ key: persoKey, personalization, createdAt: new Date().toISOString() });
+  }
+
+  // Receipt reflects THIS request: if nothing ran, it was a full cache hit.
+  const receipt = usages.length === 0 ? cachedReceipt(core.receipt) : receiptFrom(usages);
+
+  return { ...core, receipt, personalization, role: profile.role };
 }
 
 export { EMBED_DIM };
