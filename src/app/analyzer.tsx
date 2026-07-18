@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import type { AnalysisResult } from "@/lib/pipeline";
+import type { UserProfile } from "@/lib/reader";
 
 const SAMPLE = `Ontario reduces conservation-authority funding and forest-management program spending by 30%, with no explicit climate provisions, framed purely as a budget-balancing measure.`;
 
@@ -11,11 +12,15 @@ const LABEL_STYLE: Record<string, string> = {
   speculative: "bg-rose-100 text-rose-800 dark:bg-rose-900/40 dark:text-rose-300",
 };
 
-export default function Analyzer() {
+type Mode = "simple" | "briefing";
+
+export default function Analyzer({ profile }: { profile: UserProfile }) {
   const [policy, setPolicy] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<AnalysisResult | null>(null);
+  // Persona picks the default mode; the reader can flip it.
+  const [mode, setMode] = useState<Mode>(profile.role === "lawmaker" ? "briefing" : "simple");
 
   async function run() {
     setLoading(true);
@@ -30,6 +35,7 @@ export default function Analyzer() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Request failed");
       setResult(data as AnalysisResult);
+      setMode(data.role === "lawmaker" ? "briefing" : "simple");
     } catch (e) {
       setError(e instanceof Error ? e.message : "Something went wrong");
     } finally {
@@ -37,8 +43,17 @@ export default function Analyzer() {
     }
   }
 
+  const local = result?.personalization.local;
+
   return (
     <div className="space-y-6">
+      <p className="text-xs text-neutral-500">
+        Tailored for a <strong>{profile.role}</strong> in <strong>{profile.location}</strong>.{" "}
+        <a href="/auth/logout" className="underline">
+          Not you?
+        </a>
+      </p>
+
       <div>
         <textarea
           className="h-32 w-full rounded-lg border border-neutral-300 bg-transparent p-3 text-sm dark:border-neutral-700"
@@ -72,6 +87,43 @@ export default function Analyzer() {
 
       {result && (
         <section className="space-y-6">
+          {/* What it means for YOU, where you live — the "downwind" read */}
+          {local && (
+            <div className="rounded-lg bg-neutral-900 p-4 text-neutral-100 dark:bg-neutral-100 dark:text-neutral-900">
+              <p className="text-xs uppercase tracking-wide opacity-60">
+                {local.reachesReader ? `Downwind of you · ${local.location}` : `Out of reach · ${local.location}`}
+              </p>
+              <p className="mt-1 text-lg font-semibold">{local.headline}</p>
+              <p className="mt-2 text-sm opacity-80">
+                <span className="opacity-60">How it reaches you: </span>
+                {local.pathway}
+              </p>
+            </div>
+          )}
+
+          {/* Dual output — persona picks the default, reader can flip */}
+          <div>
+            <div className="mb-2 inline-flex rounded-md border border-neutral-200 p-0.5 text-xs dark:border-neutral-800">
+              {(["simple", "briefing"] as Mode[]).map((m) => (
+                <button
+                  key={m}
+                  type="button"
+                  onClick={() => setMode(m)}
+                  className={`rounded px-3 py-1 font-medium capitalize ${
+                    mode === m ? "bg-emerald-600 text-white" : "text-neutral-500"
+                  }`}
+                >
+                  {m === "simple" ? "Simple" : "Briefing"}
+                </button>
+              ))}
+            </div>
+            <div className="rounded-lg border border-neutral-200 p-4 text-sm leading-relaxed dark:border-neutral-800">
+              <p className="whitespace-pre-line">
+                {mode === "simple" ? result.personalization.simple : result.personalization.briefing}
+              </p>
+            </div>
+          </div>
+
           {/* Extracted mechanisms */}
           <div className="rounded-lg border border-neutral-200 p-4 dark:border-neutral-800">
             <h2 className="text-sm font-semibold uppercase tracking-wide text-neutral-500">
@@ -95,14 +147,6 @@ export default function Analyzer() {
               ))}
             </ul>
           </div>
-
-          {/* Local translation — the visceral number */}
-          {result.localTranslation && (
-            <div className="rounded-lg bg-neutral-900 p-4 text-neutral-100 dark:bg-neutral-100 dark:text-neutral-900">
-              <p className="text-xs uppercase tracking-wide opacity-60">Local translation</p>
-              <p className="mt-1 text-lg font-semibold">{result.localTranslation}</p>
-            </div>
-          )}
 
           {/* Three honest horizons */}
           <div className="grid gap-3 sm:grid-cols-3">

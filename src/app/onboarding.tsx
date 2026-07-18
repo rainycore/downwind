@@ -8,7 +8,7 @@ import {
   EDUCATION_LABELS,
   type ReaderRole,
   type EducationLevel,
-} from "@/lib/schemas";
+} from "@/lib/reader";
 
 const ROLE_COPY: Record<ReaderRole, { label: string; hint: string }> = {
   lawmaker: { label: "Lawmaker / policy staff", hint: "Leads with mechanisms, confidence, and citations." },
