@@ -308,3 +308,15 @@ h2,
 @media (prefers-reduced-motion: reduce) {
   .bd-twinkle { animation: none; }
 }
+
+/* Butterflies that appear when a policy is measurably improving things. */
+@keyframes dw-flit {
+  0%, 100% { transform: translate(0, 0); }
+  25%      { transform: translate(26px, -14px); }
+  50%      { transform: translate(52px, 4px); }
+  75%      { transform: translate(24px, 16px); }
+}
+.dw-flit   { animation: dw-flit 11s ease-in-out infinite; transform-box: fill-box; }
+.dw-flit-2 { animation-duration: 14s; animation-delay: -5s; }
+
+@media (prefers-reduced-motion: reduce) { .dw-flit { animation: none; } }

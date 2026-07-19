@@ -4,36 +4,53 @@ import { Card } from "./ui/Card";
 
 const MIN_CHARS = 20;
 
-// Sample bills that read as fiscal / economic measures but each hides a climate
-// lever — and each maps onto a seeded precedent so a live demo is reliable.
+// Sample bills spanning the range the product claims: several that never
+// mention the environment at all (transport, housing, trade), and two that
+// should come back measurably positive — so the demo shows improvement as well
+// as harm. Each maps onto a seeded precedent so a live run stays reliable.
 // (See data/case-studies.json: Ontario forest cuts, Brazil enforcement rollback,
 // Indonesia peatland concessions, BC fuel-management.)
 type Sample = { id: string; chip: string; hidden: string; text: string };
 
 const SAMPLES: Sample[] = [
+  // Bills that mention nothing environmental at all — the clearest proof of the
+  // thesis, since the climate lever is buried in transport/housing/trade policy.
+  {
+    id: "highway-widening",
+    chip: "Highway widening",
+    hidden: "emissions · heat",
+    text: "The state authorizes $2.3 billion in bonds to widen three interstate corridors and add general-purpose lanes, with the stated goal of reducing peak commuter congestion and shortening freight travel times.",
+  },
+  {
+    id: "parking-mandate",
+    chip: "Parking mandate",
+    hidden: "heat island · sprawl",
+    text: "The city raises minimum off-street parking requirements for new residential construction to two spaces per unit and restricts multi-family housing near transit corridors, citing neighbourhood character and traffic concerns.",
+  },
+  {
+    id: "beef-soy-tariff",
+    chip: "Import tariff cut",
+    hidden: "land use · deforestation",
+    text: "The government eliminates import tariffs and inspection requirements on beef and soy from overseas suppliers, presented as a measure to lower domestic grocery prices and ease cost-of-living pressure.",
+  },
   {
     id: "on-conservation-cut",
     chip: "Conservation cut",
     hidden: "land use · fire",
     text: "Ontario reduces conservation-authority funding and forest-management program spending by 30%, with no explicit climate provisions, framed purely as a budget-balancing measure.",
   },
+  // Two that should come back measurably POSITIVE, so the read isn't one-sided.
   {
-    id: "enforcement-rollback",
-    chip: "Enforcement rollback",
-    hidden: "emissions · land use",
-    text: "A national government cuts the environmental-inspection agency's budget by 40% and lowers penalties for land-clearing and permit violations, presented as cutting red tape for business.",
+    id: "peatland-moratorium",
+    chip: "Peatland moratorium",
+    hidden: "improves · fire · air",
+    text: "The national government makes permanent its moratorium on new plantation concessions in primary forest and peatland, and funds a peatland restoration agency to rewet drained areas, framed as disaster-risk reduction after severe haze seasons.",
   },
   {
-    id: "land-concession-subsidy",
-    chip: "Land concession subsidy",
-    hidden: "land use · emissions",
-    text: "A development bank offers new low-interest loans and tax credits for converting peatland and marginal farmland into palm-oil and agricultural estates, framed as rural economic growth.",
-  },
-  {
-    id: "fuel-crew-defunding",
-    chip: "Fuel-crew defunding",
-    hidden: "fire · heat",
-    text: "A province cancels recurring grants for community brush-clearing and wildfire fuel-reduction crews to reduce municipal spending, described strictly as a cost-saving measure.",
+    id: "fuel-crew-funding",
+    chip: "Fuel-crew funding",
+    hidden: "improves · fire",
+    text: "A province establishes recurring multi-year grants for community brush-clearing, prescribed burns and wildfire fuel-reduction crews in the wildland-urban interface, budgeted as municipal disaster preparedness.",
   },
 ];
 
@@ -71,7 +88,7 @@ export function InputPanel({
 
       <div>
         <p className="mb-1.5 text-[11px] font-medium uppercase tracking-wide text-neutral-400">
-          Or try a sample — each looks non-climate
+          Or try a sample bill
         </p>
         <div className="flex flex-wrap gap-2">
           {SAMPLES.map((s) => {

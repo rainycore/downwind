@@ -105,8 +105,9 @@ export default function Analyzer({ profile }: { profile: UserProfile }) {
       .map((a) => a.evidence?.readings ?? [])
       .sort((x, y) => y.filter((r) => r.metric).length - x.filter((r) => r.metric).length)[0] ?? [];
 
+  // pb clears the fixed bottom scene strip so the last card is never hidden.
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 pb-64">
       <p className="text-xs text-neutral-500">
         Tailored for a <strong>{profile.role}</strong> in <strong>{profile.location}</strong>.{" "}
         <a href="/auth/logout" className="underline">
@@ -130,13 +131,13 @@ export default function Analyzer({ profile }: { profile: UserProfile }) {
         <section className="space-y-6">
           {/* What it means for YOU, where you live — the "downwind" read */}
           {local && (
-            <div className="rounded-xl bg-neutral-900 p-4 text-neutral-100 dark:bg-neutral-100 dark:text-neutral-900">
-              <p className="text-xs uppercase tracking-wide opacity-60">
+            <div className="rounded-xl border border-[color-mix(in_srgb,var(--accent)_35%,transparent)] bg-[color-mix(in_srgb,var(--accent)_10%,var(--surface))] p-4 shadow-[inset_3px_0_0_0_var(--accent)]">
+              <p className="text-xs font-semibold uppercase tracking-wide text-[var(--accent)]">
                 {local.reachesReader ? `Downwind of you · ${local.location}` : `Out of reach · ${local.location}`}
               </p>
               <p className="mt-1 text-lg font-semibold">{local.headline}</p>
-              <p className="mt-2 text-sm opacity-80">
-                <span className="opacity-60">How it reaches you: </span>
+              <p className="mt-2 text-sm text-neutral-600 dark:text-neutral-300">
+                <span className="text-neutral-500 dark:text-neutral-400">How it reaches you: </span>
                 {local.pathway}
               </p>
             </div>
@@ -147,7 +148,13 @@ export default function Analyzer({ profile }: { profile: UserProfile }) {
             <p className="mb-2 text-xs font-medium uppercase tracking-wide text-neutral-400">
               {mode === "simple" ? "Simple" : "Briefing"}
             </p>
-            <p className="text-sm leading-relaxed whitespace-pre-line">
+            <p
+              className={
+                mode === "simple"
+                  ? "text-lg leading-relaxed whitespace-pre-line sm:text-xl"
+                  : "text-sm leading-relaxed whitespace-pre-line"
+              }
+            >
               {mode === "simple" ? result.personalization.simple : result.personalization.briefing}
             </p>
           </Card>
