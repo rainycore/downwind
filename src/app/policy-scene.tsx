@@ -199,11 +199,11 @@ export default function PolicyScene({
   const maskOn = clamp01((s.haze - 0.32) / 0.22);
 
   return (
-    <div className="pointer-events-none fixed inset-x-0 bottom-0 z-30 h-[34vh] max-h-[250px] min-h-[160px]">
+    <div className="pointer-events-none fixed inset-x-0 bottom-0 z-30 flex flex-col">
       <svg
         viewBox="0 0 1200 200"
         preserveAspectRatio="xMidYMax slice"
-        className="h-full w-full"
+        className="h-[26vh] max-h-[200px] min-h-[130px] w-full"
         role="img"
         aria-label="Animated strip showing the measured effect of the policy on air, vegetation and water"
       >
@@ -306,7 +306,7 @@ export default function PolicyScene({
 
       {/* Progress bar under the scene: while loading it shows the analysis
           actually advancing; afterwards it becomes the before→after timeline. */}
-      <div className="absolute inset-x-0 bottom-0 bg-[color-mix(in_srgb,var(--background)_70%,transparent)] px-4 pb-1.5 pt-1 backdrop-blur-sm">
+      <div className="border-t border-[var(--border)] bg-[var(--surface)] px-4 pb-2 pt-1.5">
         <div className="mb-1 flex items-center justify-between text-[11px] font-medium">
           {loading || !measured ? (
             <>
