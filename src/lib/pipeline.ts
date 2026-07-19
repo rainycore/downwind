@@ -325,7 +325,7 @@ function deriveLegacy(contract: PolicyLensContract): {
 // make the detailed view kid-readable too — more ground covered, same words.
 // Bump when the personalization prompt changes, so cached output from an older
 // prompt isn't served forever (the key is otherwise only policy + profile).
-const PROMPT_VERSION = "v2-reading-level";
+const PROMPT_VERSION = "v3-local-tailored";
 
 const LEVEL_GUIDE: Record<string, string> = {
   elementary: `Write for a five-year-old, and mean it.
@@ -385,7 +385,13 @@ ANALYSIS (already grounded in observed satellite precedent):
 ${JSON.stringify(legacy, null, 2)}
 
 READER:
-- Role: ${profile.role} (${profile.role === "lawmaker" ? "lead with mechanisms, confidence, citations" : "lead with what it means for daily life"})
+- Role: ${profile.role}. Role changes WHAT you emphasise, never how technical the
+  words are:
+  ${
+    profile.role === "lawmaker"
+      ? "emphasise which part of the bill drives the effect, what could be amended, and how strong the evidence is for each claim"
+      : "emphasise what changes in everyday life, who it hits hardest, and what this reader could reasonably ask for"
+  }
 - Reading level: ${EDUCATION_LABELS[profile.education]}
 - Location: ${profile.location}
 
@@ -414,8 +420,15 @@ ground. Do not switch to an analyst register for "briefing".
    measured and how we looked, how sure we are about each part, and what might
    be wrong or missing. Longer and more thorough — not more technical-sounding.
 
-3. "local": the impact grounded in ${profile.location} — a visceral headline, the
-   downwind pathway, and whether it reaches the reader.
+3. "local" — ALSO bound by the reading level above. This is the line most people
+   read first, so it must sound like it was written for them:
+   - "headline": one short, concrete sentence about ${profile.location} that this
+     reader would repeat to someone else. At an elementary level that means
+     something like "The air in ${profile.location} will get smokier in summer" —
+     never an index value or a percentage.
+   - "pathway": how it travels here, in the same register — wind, rivers, food
+     and trade, in words the reader already uses.
+   - Do not switch to a technical voice for this block.
 
 If the analysis shows the policy IMPROVES conditions, say so just as clearly as
 harm — do not force a negative framing.

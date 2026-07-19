@@ -11,11 +11,6 @@ import { Badge, type Tone } from "@/components/ui/Badge";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 import { ProvenanceBadge } from "@/components/ui/ProvenanceBadge";
 
-// A citation is either a clickable URL or a plain reference string.
-function isUrl(s: string): boolean {
-  return /^https?:\/\//i.test(s.trim());
-}
-
 // A tool-derived delta: sign is what matters (loss vs gain), tag it OBSERVED.
 function Delta({ label, value }: { label: string; value: number }) {
   return (
@@ -325,50 +320,6 @@ export default function Analyzer({ profile }: { profile: UserProfile }) {
                         </p>
                       ))}
                   </div>
-                )}
-              </Card>
-            </div>
-          )}
-
-          {/* Counterfactual — the MODELED avoided-loss estimate with CI +
-              clickable citation, or an honest "no defensible number" when null. */}
-          {mode === "briefing" && cf && (
-            <div>
-              <SectionHeading>Counterfactual estimate</SectionHeading>
-              <Card>
-                <div className="flex items-center justify-between">
-                  <span className="text-xs uppercase tracking-wide text-neutral-500">Avoided loss (matched estimate)</span>
-                  <ProvenanceBadge tag={cf.PROVENANCE_TAG} />
-                </div>
-                {cf.avoided_loss_km2 !== null ? (
-                  <p className="mt-1 text-lg font-semibold">
-                    {fmt(cf.avoided_loss_km2)} km²
-                    {cf.ci95 && (
-                      <span className="ml-2 text-sm font-normal text-neutral-500">
-                        95% CI {fmt(cf.ci95[0])}–{fmt(cf.ci95[1])} km²
-                      </span>
-                    )}
-                  </p>
-                ) : (
-                  <p className="mt-1 text-sm text-neutral-500">No defensible matched counterfactual for this case.</p>
-                )}
-                {cf.method && <p className="mt-1 text-xs text-neutral-500">{cf.method}</p>}
-                {cf.cite && (
-                  <p className="mt-1 text-xs text-neutral-400">
-                    Source:{" "}
-                    {isUrl(cf.cite) ? (
-                      <a href={cf.cite} target="_blank" rel="noreferrer" className="underline">
-                        {cf.cite}
-                      </a>
-                    ) : (
-                      cf.cite
-                    )}
-                  </p>
-                )}
-                {cf.fallback_used && (
-                  <Badge tone="mixed" className="mt-2">
-                    fallback used
-                  </Badge>
                 )}
               </Card>
             </div>

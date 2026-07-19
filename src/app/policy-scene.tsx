@@ -225,6 +225,10 @@ export default function PolicyScene({
 
   return (
     <div className="pointer-events-none fixed inset-x-0 bottom-0 z-30 flex flex-col">
+      <div
+        className="h-10 w-full"
+        style={{ backgroundImage: `linear-gradient(to bottom, transparent, ${P.sky[0]})` }}
+      />
       <svg
         viewBox="0 0 1200 200"
         preserveAspectRatio="xMidYMax slice"
