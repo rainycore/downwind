@@ -323,8 +323,16 @@ function deriveLegacy(contract: PolicyLensContract): {
 const PERSONALIZE_SCHEMA = {
   type: Type.OBJECT,
   properties: {
-    simple: { type: Type.STRING, description: "Plain-language TL;DR at the reader's reading level. No jargon." },
-    briefing: { type: Type.STRING, description: "Technical briefing: mechanisms, confidence, and which analogue/dataset grounds each claim." },
+    simple: {
+      type: Type.STRING,
+      description:
+        "2-4 short sentences, under 60 words, second person, everyday words only. No technical terms, no dataset names, no statistics beyond at most one concrete number a person can picture.",
+    },
+    briefing: {
+      type: Type.STRING,
+      description:
+        "120-200 words for a policy analyst: the causal mechanism chain, measured values with units and the instrument behind each, per-horizon confidence, the main confound, and the analogue region and years.",
+    },
     local: {
       type: Type.OBJECT,
       properties: {
@@ -360,10 +368,36 @@ atmosphere, watersheds, trade, or migration. Reason explicitly about the physica
 economic pathway from the affected regions to ${profile.location}, and only set
 reachesReader=false if there is genuinely no plausible pathway.
 
-Produce, in one pass:
-1. "simple": a TL;DR at the reader's reading level ("${EDUCATION_LABELS[profile.education]}").
-2. "briefing": a technical briefing with mechanisms, confidence, and which analogue/dataset grounds each claim.
-3. "local": the impact grounded in ${profile.location} — a visceral headline, the downwind pathway, and whether it reaches the reader.
+Produce, in one pass, THREE outputs. "simple" and "briefing" describe the same
+findings but must NOT be paraphrases of each other — they are written for
+different people and must differ in length, vocabulary, structure and detail. A
+reader flipping between them should immediately see two different documents.
+
+1. "simple" — for someone with no policy or science background, at a
+   "${EDUCATION_LABELS[profile.education]}" reading level.
+   - 2-4 short sentences, under 60 words total. Second person ("you", "your city").
+   - Lead with what changes in their daily life, not with the policy.
+   - Everyday words ONLY. Banned: emissions, mitigation, baseline, counterfactual,
+     confidence interval, provenance, aerosol optical depth, NDVI, hectares,
+     anthropogenic, per-capita, and any dataset or instrument name.
+   - At most ONE number, and it must be something a person can picture
+     (e.g. "about a week more smoky days a year"). No ranges, no percentages of
+     indices, no citations, no hedging clauses.
+
+2. "briefing" — for a legislator's policy staff.
+   - 120-200 words. Third person, analyst register. Never say "you".
+   - State the causal mechanism chain explicitly (lever -> intermediate -> observable).
+   - Give the measured values WITH units and name the instrument/dataset behind
+     each one, and the analogue region and years it came from.
+   - Label confidence per horizon (3y observed / 10y extrapolated / 30y scenario)
+     and name the single biggest confound or attribution weakness.
+   - Where the evidence is weak, say so plainly rather than smoothing it over.
+
+3. "local": the impact grounded in ${profile.location} — a visceral headline, the
+   downwind pathway, and whether it reaches the reader.
+
+If the analysis shows the policy IMPROVES conditions, say so just as clearly as
+harm — do not force a negative framing.
 Never invent precise numbers you cannot ground in the analogues; prefer ranges and state uncertainty.`;
 
   const resp = await gemini().models.generateContent({

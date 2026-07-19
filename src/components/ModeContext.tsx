@@ -2,9 +2,19 @@
 
 import { createContext, useContext, useState, type ReactNode } from "react";
 
-// The global Simple / Briefing audience toggle. Lifted out of the report card
-// so a single control in the header governs every block that renders text.
+// The global audience toggle. Lifted out of the report card so a single control
+// in the header governs every block that renders text.
+//
+// The "briefing" key is kept as the internal value because it's the name of the
+// personalization field and is baked into analyses already cached in Atlas —
+// only the user-facing label changes ("Briefing" wrongly implied *brief*, when
+// it's the longer, technical mode).
 export type Mode = "simple" | "briefing";
+
+export const MODE_LABELS: Record<Mode, string> = {
+  simple: "Simple",
+  briefing: "Detailed",
+};
 
 const ModeContext = createContext<{ mode: Mode; setMode: (m: Mode) => void } | null>(null);
 

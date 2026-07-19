@@ -2,7 +2,7 @@
 
 import type { ReactNode } from "react";
 import Link from "next/link";
-import { ModeProvider, useMode } from "./ModeContext";
+import { ModeProvider, useMode, MODE_LABELS } from "./ModeContext";
 import CartoonBackdrop from "./CartoonBackdrop";
 import ThemeToggle from "./ThemeToggle";
 import { ButtonLink } from "./ui/Button";

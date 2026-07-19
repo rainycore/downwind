@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import type { AnalysisResult } from "@/lib/pipeline";
 import type { UserProfile } from "@/lib/reader";
 import PolicyScene, { MIN_LOADING_MS } from "./policy-scene";
-import { useMode } from "@/components/ModeContext";
+import { useMode, MODE_LABELS } from "@/components/ModeContext";
 import { InputPanel } from "@/components/InputPanel";
 import { Card } from "@/components/ui/Card";
 import { Badge, type Tone } from "@/components/ui/Badge";
@@ -146,7 +146,7 @@ export default function Analyzer({ profile }: { profile: UserProfile }) {
           {/* Dual output — governed by the global Simple / Briefing header toggle */}
           <Card>
             <p className="mb-2 text-xs font-medium uppercase tracking-wide text-neutral-400">
-              {mode === "simple" ? "Simple" : "Briefing"}
+              {MODE_LABELS[mode]}
             </p>
             <p
               className={
