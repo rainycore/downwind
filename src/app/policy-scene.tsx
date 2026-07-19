@@ -240,8 +240,9 @@ export default function PolicyScene({
             <stop offset="100%" stopColor={P.sky[1]} />
           </linearGradient>
           <linearGradient id="dw-air" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor={css(hazeRGB)} stopOpacity="0" />
-            <stop offset="100%" stopColor={css(hazeRGB)} stopOpacity={s.haze * 0.6} />
+            <stop offset="0%" stopColor={css(hazeRGB)} stopOpacity={s.haze * 0.25} />
+            <stop offset="45%" stopColor={css(hazeRGB)} stopOpacity={s.haze * 0.7} />
+            <stop offset="100%" stopColor={css(hazeRGB)} stopOpacity={s.haze * 0.85} />
           </linearGradient>
           {/* Clear-air glow when the policy improves things. */}
           <linearGradient id="dw-clear" x1="0" y1="0" x2="0" y2="1">
@@ -347,6 +348,9 @@ export default function PolicyScene({
             <path d="M720 108 q6 -6 12 0 q6 -6 12 0" />
           </g>
         </g>
+
+        {/* Haze veil over everything — dulls ground and plants, not just sky */}
+        <rect x="0" y="0" width="1200" height="200" fill={css(hazeRGB)} opacity={s.haze * 0.3} />
 
         {/* Smog puffs when it's getting worse */}
         <g opacity={worse * 0.6} fill="#8d7b66">

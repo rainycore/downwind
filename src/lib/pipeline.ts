@@ -319,6 +319,28 @@ function deriveLegacy(contract: PolicyLensContract): {
   return { extraction, analogues, horizons };
 }
 
+
+// The reader's reading level governs LANGUAGE for both outputs; Simple vs
+// Detailed governs DEPTH. Picking "explain it like I'm five" must therefore
+// make the detailed view kid-readable too — more ground covered, same words.
+const LEVEL_GUIDE: Record<string, string> = {
+  elementary: `Write for a five-year-old, and mean it.
+  - Sentences under about 10 words. Common words only.
+  - No percentages, no units, no dates, no decimals, no jargon.
+  - Say "grown-ups made a new rule", not "the government enacted a policy".
+  - Explain by comparing to things a small child knows: campfire smoke, a hot
+    playground, puddles after rain, plants going brown when nobody waters them.
+  - You may say "we looked at pictures taken from space".
+  - Never use: emissions, policy, index, data, instrument names, degrees,
+    hectares, confidence, estimate, projection.`,
+  high_school: `Write for a bright 15-year-old: short plain sentences, everyday
+  words, define any term you must use, round numbers rather than decimals.`,
+  undergraduate: `Write for an educated non-specialist: plain professional prose,
+  technical terms allowed if defined once, real numbers with units.`,
+  graduate: `Write for a domain expert: precise terminology, exact values with
+  units and instruments, explicit uncertainty and confounds.`,
+};
+
 // ── Personalization (unchanged intent; fed from the derived legacy evidence) ──
 const PERSONALIZE_SCHEMA = {
   type: Type.OBJECT,
@@ -326,12 +348,12 @@ const PERSONALIZE_SCHEMA = {
     simple: {
       type: Type.STRING,
       description:
-        "2-4 short sentences, under 60 words, second person, everyday words only. No technical terms, no dataset names, no statistics beyond at most one concrete number a person can picture.",
+        "The single most important consequence, 2-4 sentences, written at the reader stated reading level.",
     },
     briefing: {
       type: Type.STRING,
       description:
-        "120-200 words for a policy analyst: the causal mechanism chain, measured values with units and the instrument behind each, per-horizon confidence, the main confound, and the analogue region and years.",
+        "Covers far more ground than simple — cause-and-effect chain, what was measured and how, confidence in each part, and what might be wrong — but at the SAME reading level as simple, never a more technical register.",
     },
     local: {
       type: Type.OBJECT,
@@ -368,30 +390,25 @@ atmosphere, watersheds, trade, or migration. Reason explicitly about the physica
 economic pathway from the affected regions to ${profile.location}, and only set
 reachesReader=false if there is genuinely no plausible pathway.
 
-Produce, in one pass, THREE outputs. "simple" and "briefing" describe the same
-findings but must NOT be paraphrases of each other — they are written for
-different people and must differ in length, vocabulary, structure and detail. A
-reader flipping between them should immediately see two different documents.
+Produce, in one pass, THREE outputs.
 
-1. "simple" — for someone with no policy or science background, at a
-   "${EDUCATION_LABELS[profile.education]}" reading level.
-   - 2-4 short sentences, under 60 words total. Second person ("you", "your city").
-   - Lead with what changes in their daily life, not with the policy.
-   - Everyday words ONLY. Banned: emissions, mitigation, baseline, counterfactual,
-     confidence interval, provenance, aerosol optical depth, NDVI, hectares,
-     anthropogenic, per-capita, and any dataset or instrument name.
-   - At most ONE number, and it must be something a person can picture
-     (e.g. "about a week more smoky days a year"). No ranges, no percentages of
-     indices, no citations, no hedging clauses.
+READING LEVEL — binds BOTH "simple" and "briefing", without exception:
+"${EDUCATION_LABELS[profile.education]}"
+${LEVEL_GUIDE[profile.education] ?? LEVEL_GUIDE.high_school}
 
-2. "briefing" — for a legislator's policy staff.
-   - 120-200 words. Third person, analyst register. Never say "you".
-   - State the causal mechanism chain explicitly (lever -> intermediate -> observable).
-   - Give the measured values WITH units and name the instrument/dataset behind
-     each one, and the analogue region and years it came from.
-   - Label confidence per horizon (3y observed / 10y extrapolated / 30y scenario)
-     and name the single biggest confound or attribution weakness.
-   - Where the evidence is weak, say so plainly rather than smoothing it over.
+"simple" and "briefing" must differ in DEPTH AND COVERAGE ONLY — never in
+reading level. If the reader asked to have it explained like they are five, the
+detailed version is still explained like they are five; it simply covers more
+ground. Do not switch to an analyst register for "briefing".
+
+1. "simple" — the single most important thing that happens, in 2-4 sentences.
+   Lead with what changes for the reader, not with the policy. One number at
+   most, and only if a person can picture it.
+
+2. "briefing" — covers much more ground than "simple", still at the reading
+   level above: the chain of cause and effect step by step, what was actually
+   measured and how we looked, how sure we are about each part, and what might
+   be wrong or missing. Longer and more thorough — not more technical-sounding.
 
 3. "local": the impact grounded in ${profile.location} — a visceral headline, the
    downwind pathway, and whether it reaches the reader.

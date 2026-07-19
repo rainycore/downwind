@@ -107,7 +107,7 @@ export default function Analyzer({ profile }: { profile: UserProfile }) {
 
   // pb clears the fixed bottom scene strip so the last card is never hidden.
   return (
-    <div className="space-y-6 pb-64">
+    <div className="space-y-6 pb-[320px]">
       <p className="text-xs text-neutral-500">
         Tailored for a <strong>{profile.role}</strong> in <strong>{profile.location}</strong>.{" "}
         <a href="/auth/logout" className="underline">
