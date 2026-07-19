@@ -1,11 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import type { AnalysisResult } from "@/lib/pipeline";
 import type { UserProfile } from "@/lib/reader";
 import PolicyScene, { MIN_LOADING_MS } from "./policy-scene";
 import { useMode, MODE_LABELS } from "@/components/ModeContext";
 import { InputPanel } from "@/components/InputPanel";
+import { LocationInput } from "@/components/LocationInput";
 import { Card } from "@/components/ui/Card";
 import { Badge, type Tone } from "@/components/ui/Badge";
 import { SectionHeading } from "@/components/ui/SectionHeading";
@@ -40,10 +42,18 @@ function deltaColor(deltaPct: number, good: "up" | "down" | "neutral"): string {
 }
 
 export default function Analyzer({ profile }: { profile: UserProfile }) {
+  const router = useRouter();
   const [policy, setPolicy] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<AnalysisResult | null>(null);
+  // Inline "where do you live" editor. The reader can move — smoke, water, and
+  // trade all depend on where they are, so location can't be a one-time
+  // onboarding capture (plan.md: ground impact where the reader lives).
+  const [editingLoc, setEditingLoc] = useState(false);
+  const [locDraft, setLocDraft] = useState(profile.location);
+  const [savingLoc, setSavingLoc] = useState(false);
+  const [locError, setLocError] = useState<string | null>(null);
   // Simple / Briefing is a global toggle owned by the header (AppShell). The
   // persona picks the default; the reader can flip it there any time.
   const { mode, setMode } = useMode();
@@ -78,6 +88,42 @@ export default function Analyzer({ profile }: { profile: UserProfile }) {
     }
   }
 
+  async function saveLocation() {
+    const next = locDraft.trim();
+    if (next.length < 2) {
+      setLocError("Please enter where you live.");
+      return;
+    }
+    if (next === profile.location) {
+      setEditingLoc(false);
+      return;
+    }
+    setSavingLoc(true);
+    setLocError(null);
+    try {
+      // The endpoint validates the whole profile, so resend role + education
+      // unchanged alongside the new location (upsert updates in place).
+      const res = await fetch("/api/profile", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ role: profile.role, location: next, education: profile.education }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Could not update location");
+      // The prior result was tailored to the old location (the "downwind of
+      // you" read especially) — drop it so nothing stale lingers, then refresh
+      // so the server re-reads the profile and re-renders with the new place.
+      setResult(null);
+      setError(null);
+      setEditingLoc(false);
+      router.refresh();
+    } catch (e) {
+      setLocError(e instanceof Error ? e.message : "Something went wrong");
+    } finally {
+      setSavingLoc(false);
+    }
+  }
+
   const local = result?.personalization.local;
 
   // The provenance-tagged contract the backend already ships to the client. The
@@ -103,12 +149,68 @@ export default function Analyzer({ profile }: { profile: UserProfile }) {
   // pb clears the fixed bottom scene strip so the last card is never hidden.
   return (
     <div className="space-y-6 pb-[320px]">
-      <p className="text-xs text-neutral-500">
-        Tailored for a <strong>{profile.role}</strong> in <strong>{profile.location}</strong>.{" "}
-        <a href="/auth/logout" className="underline">
-          Not you?
-        </a>
-      </p>
+      {editingLoc ? (
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            saveLocation();
+          }}
+          className="flex flex-wrap items-center gap-2 text-xs text-neutral-500"
+        >
+          <label htmlFor="loc-edit" className="shrink-0">
+            Where do you live?
+          </label>
+          <div className="min-w-[12rem] flex-1">
+            <LocationInput
+              id="loc-edit"
+              autoFocus
+              value={locDraft}
+              onChange={setLocDraft}
+              placeholder="Start typing a city…"
+              disabled={savingLoc}
+              inputClassName="w-full rounded-md border border-[var(--border)] bg-[var(--surface)] px-2 py-1 text-xs text-[var(--foreground)] outline-none focus:border-[var(--accent)]"
+            />
+          </div>
+          <button
+            type="submit"
+            disabled={savingLoc || locDraft.trim().length < 2}
+            className="rounded-md border border-[var(--accent-edge)] bg-[var(--accent)] px-2.5 py-1 font-medium text-[var(--accent-fg)] disabled:opacity-50"
+          >
+            {savingLoc ? "Saving…" : "Save"}
+          </button>
+          <button
+            type="button"
+            disabled={savingLoc}
+            onClick={() => {
+              setLocDraft(profile.location);
+              setLocError(null);
+              setEditingLoc(false);
+            }}
+            className="rounded-md px-2 py-1 underline hover:text-neutral-800 dark:hover:text-neutral-200"
+          >
+            Cancel
+          </button>
+          {locError && <span className="w-full text-rose-600 dark:text-rose-400">{locError}</span>}
+        </form>
+      ) : (
+        <p className="text-xs text-neutral-500">
+          Tailored for a <strong>{profile.role}</strong> in <strong>{profile.location}</strong>.{" "}
+          <button
+            type="button"
+            onClick={() => {
+              setLocDraft(profile.location);
+              setEditingLoc(true);
+            }}
+            className="underline hover:text-neutral-800 dark:hover:text-neutral-200"
+          >
+            Moved?
+          </button>{" "}
+          ·{" "}
+          <a href="/auth/logout" className="underline">
+            Not you?
+          </a>
+        </p>
+      )}
 
       <InputPanel value={policy} onChange={setPolicy} onRun={run} loading={loading} />
 
