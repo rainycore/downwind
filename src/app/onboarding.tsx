@@ -9,6 +9,7 @@ import {
   type ReaderRole,
   type EducationLevel,
 } from "@/lib/reader";
+import { LocationInput } from "@/components/LocationInput";
 
 const ROLE_COPY: Record<ReaderRole, { label: string; hint: string }> = {
   lawmaker: { label: "Lawmaker / policy staff", hint: "Leads with mechanisms, confidence, and citations." },
@@ -80,14 +81,15 @@ export default function Onboarding() {
           <label htmlFor="loc" className="text-sm font-medium">
             Where do you live?
           </label>
-          <input
-            id="loc"
-            type="text"
-            value={location}
-            onChange={(e) => setLocation(e.target.value)}
-            placeholder="e.g. New York City, USA"
-            className="mt-2 w-full rounded-lg border border-[var(--border)] bg-[var(--surface)] p-2.5 text-sm text-[var(--foreground)] outline-none focus:border-[var(--accent)]"
-          />
+          <div className="mt-2">
+            <LocationInput
+              id="loc"
+              value={location}
+              onChange={setLocation}
+              placeholder="Start typing a city, e.g. New York"
+              inputClassName="w-full rounded-lg border border-[var(--border)] bg-[var(--surface)] p-2.5 text-sm text-[var(--foreground)] outline-none focus:border-[var(--accent)]"
+            />
+          </div>
           <p className="mt-1 text-xs text-neutral-600 dark:text-neutral-300">
             We use this to show how a distant policy&apos;s effects travel to you.
           </p>

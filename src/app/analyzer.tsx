@@ -7,6 +7,7 @@ import type { UserProfile } from "@/lib/reader";
 import PolicyScene, { MIN_LOADING_MS } from "./policy-scene";
 import { useMode, MODE_LABELS } from "@/components/ModeContext";
 import { InputPanel } from "@/components/InputPanel";
+import { LocationInput } from "@/components/LocationInput";
 import { Card } from "@/components/ui/Card";
 import { Badge, type Tone } from "@/components/ui/Badge";
 import { SectionHeading } from "@/components/ui/SectionHeading";
@@ -159,16 +160,17 @@ export default function Analyzer({ profile }: { profile: UserProfile }) {
           <label htmlFor="loc-edit" className="shrink-0">
             Where do you live?
           </label>
-          <input
-            id="loc-edit"
-            type="text"
-            autoFocus
-            value={locDraft}
-            onChange={(e) => setLocDraft(e.target.value)}
-            placeholder="e.g. New York City, USA"
-            disabled={savingLoc}
-            className="min-w-[12rem] flex-1 rounded-md border border-[var(--border)] bg-[var(--surface)] px-2 py-1 text-xs text-[var(--foreground)] outline-none focus:border-[var(--accent)]"
-          />
+          <div className="min-w-[12rem] flex-1">
+            <LocationInput
+              id="loc-edit"
+              autoFocus
+              value={locDraft}
+              onChange={setLocDraft}
+              placeholder="Start typing a city…"
+              disabled={savingLoc}
+              inputClassName="w-full rounded-md border border-[var(--border)] bg-[var(--surface)] px-2 py-1 text-xs text-[var(--foreground)] outline-none focus:border-[var(--accent)]"
+            />
+          </div>
           <button
             type="submit"
             disabled={savingLoc || locDraft.trim().length < 2}
