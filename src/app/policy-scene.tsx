@@ -66,6 +66,7 @@ type Palette = {
   orb: [RGB, RGB]; // sun by day, moon by night
   haze: RGB;
   clear: string; // clean-air glow
+  sky: [string, string]; // opaque base so page text never bleeds through
   pond: string;
   duck: string;
   beak: string;
@@ -75,6 +76,9 @@ type Palette = {
   hair: string;
   flit: [string, string]; // butterflies / fireflies
   blooms: [string, string, string];
+  petalDull: RGB; // flowers fade toward this as vegetation drops
+  petals: [RGB, RGB, RGB];
+  tuft: [RGB, RGB]; // grass tufts, dry -> lush
 };
 
 const DAY: Palette = {
@@ -83,6 +87,7 @@ const DAY: Palette = {
   orb: [[255, 213, 79], [255, 112, 67]],
   haze: [150, 125, 95],
   clear: "#bde9ff",
+  sky: ["#eaf6ff", "#f7fbe9"] as [string, string],
   pond: "#7ec8e3",
   duck: "#ffd93d",
   beak: "#ff9f1c",
@@ -92,6 +97,9 @@ const DAY: Palette = {
   hair: "#5b4636",
   flit: ["#ff8fc7", "#8fd0ff"],
   blooms: ["#ff9ec4", "#ffd166", "#c9a7ff"],
+  petalDull: [156, 138, 102],
+  petals: [[255, 158, 196], [255, 209, 102], [201, 167, 255]],
+  tuft: [[168, 148, 104], [74, 154, 66]],
 };
 
 const NIGHT: Palette = {
@@ -100,6 +108,7 @@ const NIGHT: Palette = {
   orb: [[238, 236, 220], [232, 198, 150]],
   haze: [64, 66, 88],
   clear: "#7fa8d8",
+  sky: ["#16233d", "#1c2b22"] as [string, string],
   pond: "#3e7ba0",
   duck: "#d8b845",
   beak: "#c07a1c",
@@ -109,6 +118,9 @@ const NIGHT: Palette = {
   hair: "#3b2e26",
   flit: ["#ffe9a3", "#ffd97a"],
   blooms: ["#a86c86", "#a8904f", "#8878a8"],
+  petalDull: [86, 78, 66],
+  petals: [[168, 108, 134], [168, 144, 79], [136, 120, 168]],
+  tuft: [[70, 64, 48], [40, 78, 48]],
 };
 
 export const MIN_LOADING_MS = 7000;
@@ -121,9 +133,20 @@ const TREES = [
   { x: 70, s: 1.0 }, { x: 196, s: 0.72 }, { x: 330, s: 0.88 },
   { x: 900, s: 0.8 }, { x: 1040, s: 1.05 }, { x: 1160, s: 0.7 },
 ];
-const BLOOMS = [
-  { x: 130, y: 176 }, { x: 262, y: 184 }, { x: 400, y: 178 }, { x: 470, y: 188 },
-  { x: 700, y: 182 }, { x: 960, y: 178 }, { x: 1100, y: 186 },
+// Flowers/plants dotted along the meadow. They are always present: they stand
+// tall and colourful when vegetation is healthy and wilt, droop and fade when
+// it isn't — so the vegetation reading is legible in BOTH directions.
+const PLANTS = [
+  { x: 96, y: 178 }, { x: 168, y: 188 }, { x: 262, y: 182 }, { x: 356, y: 190 },
+  { x: 430, y: 179 }, { x: 500, y: 188 }, { x: 660, y: 184 }, { x: 700, y: 192 },
+  { x: 760, y: 180 }, { x: 880, y: 190 }, { x: 962, y: 179 }, { x: 1044, y: 189 },
+  { x: 1118, y: 182 }, { x: 1176, y: 191 },
+];
+// Small grass tufts that grow with NDVI.
+const TUFTS = [
+  { x: 40, y: 186 }, { x: 220, y: 192 }, { x: 300, y: 184 }, { x: 470, y: 194 },
+  { x: 560, y: 186 }, { x: 640, y: 193 }, { x: 730, y: 187 }, { x: 840, y: 194 },
+  { x: 920, y: 186 }, { x: 1000, y: 193 }, { x: 1080, y: 187 }, { x: 1150, y: 194 },
 ];
 
 export default function PolicyScene({
@@ -197,6 +220,8 @@ export default function PolicyScene({
   const foliageR = 13 + s.green * 9;
   const pondRx = 26 + s.water * 30;
   const maskOn = clamp01((s.haze - 0.32) / 0.22);
+  const tuftCol = css(mix(P.tuft[0], P.tuft[1], s.green));
+  const tuftH = 4 + s.green * 8;
 
   return (
     <div className="pointer-events-none fixed inset-x-0 bottom-0 z-30 flex flex-col">
@@ -210,6 +235,10 @@ export default function PolicyScene({
         <defs>
           {/* The air tint fades out upward, so the strip melts into the page
               instead of sitting in a box. */}
+          <linearGradient id="dw-base" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor={P.sky[0]} />
+            <stop offset="100%" stopColor={P.sky[1]} />
+          </linearGradient>
           <linearGradient id="dw-air" x1="0" y1="0" x2="0" y2="1">
             <stop offset="0%" stopColor={css(hazeRGB)} stopOpacity="0" />
             <stop offset="100%" stopColor={css(hazeRGB)} stopOpacity={s.haze * 0.6} />
@@ -221,6 +250,7 @@ export default function PolicyScene({
           </linearGradient>
         </defs>
 
+        <rect x="0" y="0" width="1200" height="200" fill="url(#dw-base)" />
         <rect x="0" y="0" width="1200" height="200" fill="url(#dw-clear)" />
         <rect x="0" y="0" width="1200" height="200" fill="url(#dw-air)" />
 
@@ -241,16 +271,18 @@ export default function PolicyScene({
           </g>
         ))}
 
-        {/* pond + the duck, paddling */}
+        {/* pond + the duck, seated in the water rather than hovering above it */}
         <ellipse cx="820" cy="176" rx={pondRx} ry="11" fill={P.pond} opacity="0.9" />
         <g className="dw-paddle">
           <g className="dw-bob">
-            <ellipse cx="820" cy="168" rx="12" ry="8.5" fill={P.duck} />
-            <circle cx="830" cy="159" r="6.5" fill={P.duck} />
-            <polygon points="836,159 845,161 836,163" fill={P.beak} />
-            <circle cx="831.5" cy="157.5" r="1.3" fill="#3d2c00" />
+            <ellipse cx="820" cy="172" rx="12" ry="8" fill={P.duck} />
+            <circle cx="830" cy="163" r="6.5" fill={P.duck} />
+            <polygon points="836,163 845,165 836,167" fill={P.beak} />
+            <circle cx="831.5" cy="161.5" r="1.3" fill="#3d2c00" />
           </g>
         </g>
+        {/* waterline over the duck's belly completes the "floating" read */}
+        <ellipse cx="820" cy="179" rx={pondRx} ry="7.5" fill={P.pond} opacity="0.95" />
 
         {/* the girl — mask fades in with haze, arms lift when things improve */}
         <ellipse cx="600" cy="186" rx="13" ry="3.5" fill="rgba(0,0,0,.12)" />
@@ -258,12 +290,10 @@ export default function PolicyScene({
           <rect x="596" y="164" width="3" height="18" fill={P.hair} />
           <rect x="602" y="164" width="3" height="18" fill={P.hair} />
           <path d="M590 164 L600 138 L610 164 Z" fill={P.dress} />
-          <g className="dw-wave" style={{ transformOrigin: "592px 148px" }}>
-            <rect x="582" y="146" width="11" height="3" rx="1.5" fill={P.skin}
-              transform={`rotate(${-18 - better * 40} 592 148)`} />
-          </g>
-          <rect x="607" y="146" width="11" height="3" rx="1.5" fill={P.skin}
-            transform={`rotate(${14 + better * 40} 608 148)`} />
+          <line x1="593" y1="147" x2="583" y2="155" stroke={P.skin} strokeWidth="3.4"
+            strokeLinecap="round" transform={`rotate(${-better * 55} 593 147)`} />
+          <line x1="607" y1="147" x2="617" y2="155" stroke={P.skin} strokeWidth="3.4"
+            strokeLinecap="round" transform={`rotate(${better * 55} 607 147)`} />
           <circle cx="600" cy="132" r="10" fill={P.skin} />
           <path d="M590 130 a10 10 0 0 1 20 0 q-10 -7 -20 0 Z" fill={P.hair} />
           <path d="M596 136 q4 3.5 8 0" stroke="#c4744f" strokeWidth="1.4" fill="none"
@@ -274,17 +304,39 @@ export default function PolicyScene({
           <circle cx="603.4" cy="130.5" r="1.1" fill="#3d2c00" />
         </g>
 
-        {/* Blossom that opens as things get better */}
-        <g opacity={better}>
-          {BLOOMS.map((b, i) => (
-            <g key={i} transform={`translate(${b.x} ${b.y})`}>
-              <path d="M0 0 L0 -13" stroke="#4c9f5a" strokeWidth="2" strokeLinecap="round" />
-              <circle cx="0" cy="-17" r="4" fill={i % 3 === 0 ? P.blooms[0] : i % 3 === 1 ? P.blooms[1] : P.blooms[2]} />
-              <circle cx="-4" cy="-14" r="3.2" fill={i % 3 === 0 ? P.blooms[0] : i % 3 === 1 ? P.blooms[1] : P.blooms[2]} />
-              <circle cx="4" cy="-14" r="3.2" fill={i % 3 === 0 ? P.blooms[0] : i % 3 === 1 ? P.blooms[1] : P.blooms[2]} />
+        {/* Grass tufts — height and colour track vegetation (NDVI) */}
+        <g stroke={tuftCol} strokeWidth="2" strokeLinecap="round" fill="none">
+          {TUFTS.map((t, i) => (
+            <g key={i} transform={`translate(${t.x} ${t.y})`} className="dw-sway"
+               style={{ transformOrigin: "50% 100%" }}>
+              <path d={`M0 0 L${-2.5} ${-tuftH}`} />
+              <path d={`M0 0 L0 ${-tuftH * 1.25}`} />
+              <path d={`M0 0 L${2.5} ${-tuftH}`} />
             </g>
           ))}
         </g>
+
+        {/* Flowers: upright and vivid when healthy, drooping and drab when not */}
+        {PLANTS.map((pl, i) => {
+          const petal = css(mix(P.petalDull, P.petals[i % 3], s.green));
+          const h = 9 + s.green * 13; // stem height follows vegetation
+          const droop = (1 - s.green) * 26 + worse * 16; // wilt angle
+          const dx = droop * 0.22;
+          return (
+            <g key={i} transform={`translate(${pl.x} ${pl.y})`} className="dw-sway-slow"
+               style={{ transformOrigin: "50% 100%" }}>
+              <path d={`M0 0 Q ${dx * 0.4} ${-h * 0.55} ${dx} ${-h}`}
+                stroke={tuftCol} strokeWidth="2" fill="none" strokeLinecap="round" />
+              <g transform={`translate(${dx} ${-h}) rotate(${droop})`}>
+                <circle cx="-3.6" cy="0" r="3" fill={petal} />
+                <circle cx="3.6" cy="0" r="3" fill={petal} />
+                <circle cx="0" cy="-3.6" r="3" fill={petal} />
+                <circle cx="0" cy="0" r="3.4" fill={petal} />
+                <circle cx="0" cy="0" r="1.5" fill={P.blooms[1]} opacity="0.9" />
+              </g>
+            </g>
+          );
+        })}
 
         {/* Butterflies only turn up when the air is getting cleaner */}
         <g opacity={better} fill="none" stroke={P.flit[0]} strokeWidth="2.4" strokeLinecap="round">

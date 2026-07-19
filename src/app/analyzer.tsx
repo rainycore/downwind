@@ -193,7 +193,22 @@ export default function Analyzer({ profile }: { profile: UserProfile }) {
           {/* Three honest horizons — provenance-tagged straight from the
               contract (OBSERVED / MODELED / LLM_NARRATIVE), with the 5–10y
               method and the 30y SPECULATIVE flag surfaced. */}
-          {l4?.horizons ? (
+          {mode === "simple" ? (
+            <Card>
+              <p className="mb-2 text-xs font-medium uppercase tracking-wide text-neutral-400">
+                What happens next
+              </p>
+              {result.horizons[0] && (
+                <p className="text-lg leading-relaxed sm:text-xl">{result.horizons[0].assessment}</p>
+              )}
+              {result.horizons.length > 1 && (
+                <p className="mt-3 text-base leading-relaxed text-neutral-600 dark:text-neutral-300">
+                  Further ahead this is a rough scenario rather than a measurement:{" "}
+                  {result.horizons[result.horizons.length - 1].assessment}
+                </p>
+              )}
+            </Card>
+          ) : l4?.horizons ? (
             <div className="grid gap-3 sm:grid-cols-3">
               <Card>
                 <div className="flex items-center justify-between">
@@ -239,7 +254,7 @@ export default function Analyzer({ profile }: { profile: UserProfile }) {
               (L3), the tool-measured deltas [OBSERVED], and the VLM direction
               cross-check [LLM_NARRATIVE]. Never fabricates: null imagery shows an
               honest flag, not a blank card (plan.md L250, L282). */}
-          {obs && (
+          {mode === "briefing" && obs && (
             <div>
               <SectionHeading>Live satellite read</SectionHeading>
               <Card>
@@ -317,7 +332,7 @@ export default function Analyzer({ profile }: { profile: UserProfile }) {
 
           {/* Counterfactual — the MODELED avoided-loss estimate with CI +
               clickable citation, or an honest "no defensible number" when null. */}
-          {cf && (
+          {mode === "briefing" && cf && (
             <div>
               <SectionHeading>Counterfactual estimate</SectionHeading>
               <Card>
@@ -360,7 +375,7 @@ export default function Analyzer({ profile }: { profile: UserProfile }) {
           )}
 
           {/* Observed analogues (receipts mode) */}
-          {result.analogues.length > 0 && (
+          {mode === "briefing" && result.analogues.length > 0 && (
             <div>
               <SectionHeading>Observed precedents (receipts)</SectionHeading>
               <ul className="space-y-2">
@@ -436,7 +451,8 @@ export default function Analyzer({ profile }: { profile: UserProfile }) {
           {/* Assumptions & limitations — the visible honesty panel (plan.md
               L315). Collapsed by default; caveats from L4 + counterfactual
               assumptions, all computed by the backend. */}
-          {((l4?.caveats?.length ?? 0) > 0 || (cf?.assumptions?.length ?? 0) > 0) && (
+          {mode === "briefing" &&
+            ((l4?.caveats?.length ?? 0) > 0 || (cf?.assumptions?.length ?? 0) > 0) && (
             <details className="rounded-xl border border-[var(--border)] bg-[var(--surface)] p-4 text-sm">
               <summary className="cursor-pointer text-xs font-semibold uppercase tracking-wide text-neutral-500">
                 Assumptions &amp; limitations

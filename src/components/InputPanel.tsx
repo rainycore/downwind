@@ -1,6 +1,7 @@
 "use client";
 
 import { Card } from "./ui/Card";
+import { useMode } from "./ModeContext";
 
 const MIN_CHARS = 20;
 
@@ -10,33 +11,52 @@ const MIN_CHARS = 20;
 // as harm. Each maps onto a seeded precedent so a live run stays reliable.
 // (See data/case-studies.json: Ontario forest cuts, Brazil enforcement rollback,
 // Indonesia peatland concessions, BC fuel-management.)
-type Sample = { id: string; chip: string; hidden: string; text: string };
+type Sample = {
+  id: string;
+  chip: string;
+  hidden: string;
+  text: string;
+  bill: string; // the real instrument this sample is modelled on
+  where: string;
+  year: string;
+};
 
 const SAMPLES: Sample[] = [
-  // Bills that mention nothing environmental at all — the clearest proof of the
-  // thesis, since the climate lever is buried in transport/housing/trade policy.
+  // Bills that never mention the environment — the clearest proof of the thesis.
   {
     id: "highway-widening",
     chip: "Highway widening",
     hidden: "emissions · heat",
-    text: "The state authorizes $2.3 billion in bonds to widen three interstate corridors and add general-purpose lanes, with the stated goal of reducing peak commuter congestion and shortening freight travel times.",
+    bill: "Infrastructure Investment and Jobs Act — highway formula funding",
+    where: "United States (federal)",
+    year: "2021",
+    text: "The state authorizes multi-billion-dollar bond funding to widen interstate corridors and add general-purpose lanes, with the stated goal of reducing peak commuter congestion and shortening freight travel times.",
   },
   {
     id: "parking-mandate",
     chip: "Parking mandate",
     hidden: "heat island · sprawl",
+    bill: "Assembly Bill 2097 (parking minimums near transit) — inverted for the harmful case",
+    where: "California, United States",
+    year: "2022",
     text: "The city raises minimum off-street parking requirements for new residential construction to two spaces per unit and restricts multi-family housing near transit corridors, citing neighbourhood character and traffic concerns.",
   },
   {
     id: "beef-soy-tariff",
     chip: "Import tariff cut",
     hidden: "land use · deforestation",
+    bill: "EU–Mercosur trade agreement — beef and soy tariff-rate quotas",
+    where: "EU / Mercosur",
+    year: "2019 (agreed in principle)",
     text: "The government eliminates import tariffs and inspection requirements on beef and soy from overseas suppliers, presented as a measure to lower domestic grocery prices and ease cost-of-living pressure.",
   },
   {
     id: "on-conservation-cut",
     chip: "Conservation cut",
     hidden: "land use · fire",
+    bill: "Bill 229, Protect, Support and Recover from COVID-19 Act — Schedule 6 (conservation authorities)",
+    where: "Ontario, Canada",
+    year: "2020",
     text: "Ontario reduces conservation-authority funding and forest-management program spending by 30%, with no explicit climate provisions, framed purely as a budget-balancing measure.",
   },
   // Two that should come back measurably POSITIVE, so the read isn't one-sided.
@@ -44,12 +64,18 @@ const SAMPLES: Sample[] = [
     id: "peatland-moratorium",
     chip: "Peatland moratorium",
     hidden: "improves · fire · air",
+    bill: "Presidential Instruction No. 5/2019 (permanent forest & peatland moratorium)",
+    where: "Indonesia",
+    year: "2019",
     text: "The national government makes permanent its moratorium on new plantation concessions in primary forest and peatland, and funds a peatland restoration agency to rewet drained areas, framed as disaster-risk reduction after severe haze seasons.",
   },
   {
     id: "fuel-crew-funding",
     chip: "Fuel-crew funding",
     hidden: "improves · fire",
+    bill: "Community Resiliency Investment programme (FireSmart)",
+    where: "British Columbia, Canada",
+    year: "2018",
     text: "A province establishes recurring multi-year grants for community brush-clearing, prescribed burns and wildfire fuel-reduction crews in the wildland-urban interface, budgeted as municipal disaster preparedness.",
   },
 ];
@@ -65,6 +91,8 @@ export function InputPanel({
   onRun: () => void;
   loading: boolean;
 }) {
+  const { mode } = useMode();
+  const selected = SAMPLES.find((x) => x.text.trim() === value.trim());
   const len = value.trim().length;
   const tooShort = len < MIN_CHARS;
 
@@ -110,6 +138,12 @@ export function InputPanel({
             );
           })}
         </div>
+        {/* Detailed mode names the real instrument each sample is modelled on. */}
+        {mode === "briefing" && selected && (
+          <p className="mt-2 text-[11px] leading-relaxed text-neutral-500 dark:text-neutral-400">
+            Modelled on <span className="font-medium">{selected.bill}</span> — {selected.where}, {selected.year}.
+          </p>
+        )}
       </div>
 
       <div className="flex items-center gap-3 pt-1">
