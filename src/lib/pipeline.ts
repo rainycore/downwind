@@ -323,6 +323,10 @@ function deriveLegacy(contract: PolicyLensContract): {
 // The reader's reading level governs LANGUAGE for both outputs; Simple vs
 // Detailed governs DEPTH. Picking "explain it like I'm five" must therefore
 // make the detailed view kid-readable too — more ground covered, same words.
+// Bump when the personalization prompt changes, so cached output from an older
+// prompt isn't served forever (the key is otherwise only policy + profile).
+const PROMPT_VERSION = "v2-reading-level";
+
 const LEVEL_GUIDE: Record<string, string> = {
   elementary: `Write for a five-year-old, and mean it.
   - Sentences under about 10 words. Common words only.
@@ -450,7 +454,7 @@ export async function analyzePolicy(
     for (const a of legacy.analogues) a.evidence = byId.get(a.policyId);
   }
 
-  const persoKey = `${core.inputHash}:${profileHash(profile)}`;
+  const persoKey = `${core.inputHash}:${profileHash(profile)}:${PROMPT_VERSION}`;
   const cachedPerso = await db
     .collection<{ key: string; personalization: Personalization }>(COLLECTIONS.personalizations)
     .findOne({ key: persoKey }, { projection: { _id: 0 } });
