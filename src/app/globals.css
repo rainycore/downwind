@@ -320,3 +320,14 @@ h2,
 .dw-flit-2 { animation-duration: 14s; animation-delay: -5s; }
 
 @media (prefers-reduced-motion: reduce) { .dw-flit { animation: none; } }
+
+/* Moving stripe on the progress bar while an analysis is running. */
+@keyframes dw-bar { from { background-position: 0 0; } to { background-position: 28px 0; } }
+.dw-bar {
+  background-image: linear-gradient(115deg,
+    rgba(255,255,255,.35) 25%, transparent 25%, transparent 50%,
+    rgba(255,255,255,.35) 50%, rgba(255,255,255,.35) 75%, transparent 75%);
+  background-size: 28px 28px;
+  animation: dw-bar 0.9s linear infinite;
+}
+@media (prefers-reduced-motion: reduce) { .dw-bar { animation: none; } }

@@ -1,28 +1,9 @@
 "use client";
 
-import { useSyncExternalStore } from "react";
-
-type Theme = "light" | "dark";
-
-// The theme lives on <html data-theme>, set before paint by the inline script
-// in layout.tsx. We subscribe to that attribute as an external store rather
-// than mirroring it into component state, so the button always reflects the
-// real value — even if something else changes it.
-function subscribe(onChange: () => void) {
-  const observer = new MutationObserver(onChange);
-  observer.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
-  return () => observer.disconnect();
-}
-
-const getSnapshot = (): Theme =>
-  document.documentElement.dataset.theme === "dark" ? "dark" : "light";
-
-// Unknown during SSR — render a neutral placeholder so hydration matches and
-// the icon never visibly flips.
-const getServerSnapshot = (): Theme | null => null;
+import { useTheme, type Theme } from "./useTheme";
 
 export default function ThemeToggle() {
-  const theme = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
+  const theme = useTheme();
 
   function toggle() {
     const next: Theme = theme === "dark" ? "light" : "dark";

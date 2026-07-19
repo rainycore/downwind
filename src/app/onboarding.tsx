@@ -44,9 +44,9 @@ export default function Onboarding() {
   }
 
   return (
-    <div className="rounded-lg border border-neutral-200 p-6 dark:border-neutral-800">
+    <div className="rounded-2xl border border-[var(--border)] bg-[color-mix(in_srgb,var(--surface)_92%,transparent)] p-6 shadow-sm backdrop-blur-md sm:p-8">
       <h2 className="text-lg font-semibold">Tell us who&apos;s reading</h2>
-      <p className="mt-1 text-sm text-neutral-500">
+      <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-300">
         A policy enacted anywhere can reach you on the wind, water, or trade — Toronto&apos;s
         wildfire smoke drifted into New York. We tailor every analysis to you and ground it
         where you live.
@@ -64,12 +64,12 @@ export default function Onboarding() {
                 onClick={() => setRole(r)}
                 className={`rounded-lg border p-3 text-left text-sm ${
                   role === r
-                    ? "border-emerald-600 bg-emerald-50 dark:bg-emerald-950/30"
-                    : "border-neutral-200 dark:border-neutral-800"
+                    ? "border-[var(--accent)] bg-[color-mix(in_srgb,var(--accent)_12%,var(--surface))]"
+                    : "border-[var(--border)] bg-[var(--surface)]"
                 }`}
               >
                 <span className="font-medium">{ROLE_COPY[r].label}</span>
-                <span className="mt-0.5 block text-xs text-neutral-500">{ROLE_COPY[r].hint}</span>
+                <span className="mt-0.5 block text-xs text-neutral-600 dark:text-neutral-300">{ROLE_COPY[r].hint}</span>
               </button>
             ))}
           </div>
@@ -86,9 +86,9 @@ export default function Onboarding() {
             value={location}
             onChange={(e) => setLocation(e.target.value)}
             placeholder="e.g. New York City, USA"
-            className="mt-2 w-full rounded-lg border border-neutral-300 bg-transparent p-2.5 text-sm dark:border-neutral-700"
+            className="mt-2 w-full rounded-lg border border-[var(--border)] bg-[var(--surface)] p-2.5 text-sm text-[var(--foreground)] outline-none focus:border-[var(--accent)]"
           />
-          <p className="mt-1 text-xs text-neutral-500">
+          <p className="mt-1 text-xs text-neutral-600 dark:text-neutral-300">
             We use this to show how a distant policy&apos;s effects travel to you.
           </p>
         </div>
@@ -102,10 +102,10 @@ export default function Onboarding() {
             id="edu"
             value={education}
             onChange={(e) => setEducation(e.target.value as EducationLevel)}
-            className="mt-2 w-full rounded-lg border border-neutral-300 bg-transparent p-2.5 text-sm dark:border-neutral-700"
+            className="mt-2 w-full rounded-lg border border-[var(--border)] bg-[var(--surface)] p-2.5 text-sm text-[var(--foreground)] outline-none focus:border-[var(--accent)]"
           >
             {EDUCATION_LEVELS.map((lvl) => (
-              <option key={lvl} value={lvl} className="dark:bg-neutral-900">
+              <option key={lvl} value={lvl} className="bg-[var(--surface)] text-[var(--foreground)]">
                 {EDUCATION_LABELS[lvl]}
               </option>
             ))}
@@ -122,7 +122,7 @@ export default function Onboarding() {
           type="button"
           onClick={submit}
           disabled={saving || location.trim().length < 2}
-          className="rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
+          className="rounded-full border-2 border-[var(--accent-edge)] bg-[var(--accent)] px-5 py-2.5 text-sm font-semibold text-[var(--accent-fg)] shadow-[0_4px_0_0_var(--accent-edge)] transition-all active:translate-y-[4px] active:shadow-none disabled:opacity-50"
         >
           {saving ? "Saving…" : "Start analyzing"}
         </button>

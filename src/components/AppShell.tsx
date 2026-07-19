@@ -25,7 +25,7 @@ function ModeToggle() {
               : "text-neutral-500 hover:text-neutral-800 dark:hover:text-neutral-200"
           }`}
         >
-          {m}
+          {MODE_LABELS[m]}
         </button>
       ))}
     </div>
